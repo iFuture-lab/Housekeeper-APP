@@ -7,6 +7,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from rest_framework.decorators import api_view, permission_classes
 
 from .serializers import RegisterSerializer, LoginSerializer
 
@@ -14,6 +15,8 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
+   
+
 
 class LoginView(generics.GenericAPIView):
     permission_classes = (AllowAny,)

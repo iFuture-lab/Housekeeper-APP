@@ -34,6 +34,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'login',
     'rest_framework',
+    'rest_framework_swagger',
     'rest_framework.authtoken',
     'django.contrib.sites',
     'allauth',
@@ -46,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'drf_yasg',
 ]
 
 SITE_ID = 1
@@ -190,20 +192,3 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-
-
-
-##############################\
-import dj_database_url
-
-DEBUG = False
-ALLOWED_HOSTS = ['your-render-url.onrender.com']
-
-
-
-
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATIC_URL = '/static/'
-
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

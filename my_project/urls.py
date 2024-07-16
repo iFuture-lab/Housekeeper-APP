@@ -16,10 +16,49 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
+from rest_framework import routers
+#from rest_framework.schemas import get_schema_view
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from rest_framework_swagger.renderers import SwaggerUIRenderer, OpenAPIRenderer
+from rest_framework.permissions import AllowAny 
+
+
+     # Ensure this is empty
+    
+schema_view  = get_schema_view(
+    openapi.Info(
+        title="Your API",
+        default_version='v1',
+        description="APIs for user login",
+        #terms_of_service="http://localhost:8000/api/login/",
+        terms_of_service="https://www.example.com/terms/",  # Placeholder URL
+        contact=openapi.Contact(email="jenansol@hotmail.com"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    permission_classes=(AllowAny,),
+)
+    
+
+# # Schema view for API v2
+# schema_view_v2 = get_schema_view(
+#     title='API v2 Documentation',
+#     renderer_classes=[OpenAPIRenderer, SwaggerUIRenderer],
+#     url='http://localhost:8000/api/register/',  # Base URL for API v2
+#     authentication_classes=[],  # Ensure this is empty
+#     permission_classes=[],  
+# )
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('dj_rest_auth.urls')),
     path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
     path('api/', include('login.urls')),
+    path('swagger/login/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'), 
+    # Swagger UI endpoint
+    #path('swagger/register/', schema_view_v2, name='swagger-ui-v2'),  # Swagger UI endpoint
 ]
 
