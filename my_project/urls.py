@@ -14,6 +14,16 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+ 
+
+# # Schema view for API v2
+# schema_view_v2 = get_schema_view(
+#     title='API v2 Documentation',
+#     renderer_classes=[OpenAPIRenderer, SwaggerUIRenderer],
+#     url='http://localhost:8000/api/register/',  # Base URL for API v2
+#     authentication_classes=[],  # Ensure this is empty
+#     permission_classes=[],  
+# )
 from django.contrib import admin
 from django.urls import path,include
 from rest_framework import routers
@@ -24,8 +34,6 @@ from rest_framework_swagger.renderers import SwaggerUIRenderer, OpenAPIRenderer
 from rest_framework.permissions import AllowAny 
 
 
-     # Ensure this is empty
-    
 schema_view  = get_schema_view(
     openapi.Info(
         title="Your API",
@@ -39,23 +47,16 @@ schema_view  = get_schema_view(
     public=True,
     permission_classes=(AllowAny,),
 )
-    
-
-# # Schema view for API v2
-# schema_view_v2 = get_schema_view(
-#     title='API v2 Documentation',
-#     renderer_classes=[OpenAPIRenderer, SwaggerUIRenderer],
-#     url='http://localhost:8000/api/register/',  # Base URL for API v2
-#     authentication_classes=[],  # Ensure this is empty
-#     permission_classes=[],  
-# )
-
+   
+   
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('dj_rest_auth.urls')),
     path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),
     path('api/', include('login.urls')),
+    path('', include('housekeeper.urls')),
     path('swagger/login/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'), 
     # Swagger UI endpoint

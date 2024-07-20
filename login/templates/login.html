@@ -1,0 +1,93 @@
+<!-- login.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+</head>
+<body>
+    <h2>Login</h2>
+    <form id="loginForm" method="POST">
+        {% csrf_token %}
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" required><br><br>
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" required><br><br>
+        <button type="submit">Login</button>
+    </form>
+
+    <div id="loginError" style="color: red;"></div>
+
+    <script>
+
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            fetch('/api/login/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password,
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Invalid Credentials');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Redirect to home page upon successful login
+                window.location.href = '/api/home/';
+            })
+            .catch(error => {
+                document.getElementById('loginError').textContent = error.message;
+            });
+        });
+
+        fetch('/api/home/', {
+    method: 'GET',
+    headers: {
+        'Authorization': 'Bearer ' + localStorage.getItem('access_token'),  // Example: Access token stored in localStorage
+        'Content-Type': 'application/json',
+    },
+})
+.then(response => {
+    if (!response.ok) {
+        throw new Error('Failed to fetch data');
+    }
+    return response.json();
+})
+.then(data => {
+    console.log('Response:', data);
+})
+.catch(error => {
+    console.error('Error:', error);
+});
+
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>
