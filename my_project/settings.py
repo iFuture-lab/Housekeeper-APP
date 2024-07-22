@@ -36,7 +36,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'login',
-    'housekeeper',
+    #'housekeeper',
     'rest_framework',
     'rest_framework_swagger',
     'rest_framework.authtoken',
