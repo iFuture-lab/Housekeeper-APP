@@ -49,6 +49,10 @@ class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField()
     
+    
+    class Meta:
+        ref_name = 'LoginSerializer'  # Explicitly set ref_name
+    
 
 
         
