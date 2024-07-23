@@ -1,5 +1,6 @@
 from django.shortcuts import render,redirect
 from django.contrib.auth.models import User
+from .models import CustomUser
 
 # Create your views here.
 from rest_framework import generics
@@ -11,7 +12,7 @@ from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
-from .serializers import RegisterSerializer, LoginSerializer
+from .serializers import RegisterSerializercustomer, LoginSerializercustomer,RegisterSerializer, LoginSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -24,6 +25,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
+########################### clients views #########################################
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def login_view(request):
@@ -31,8 +33,10 @@ def login_view(request):
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             username = form.cleaned_data.get('username')
+            phone_number = form.cleaned_data.get('phone_number')
+           
             password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
+            user = authenticate(phone_number= phone_number, password=password)
             if user is not None:
                 login(request, user)
                 return redirect('/api/home')  # Redirect to home page
@@ -45,16 +49,6 @@ def login_view(request):
     return render(request, 'login.html', {'form': form})
 
 
-
-# @permission_classes([IsAuthenticated]) 
-# def home_view(request):
-#     data = {
-#         'message': 'Welcome to another page!',
-#         'user': request.user.username  # Example: Accessing current user
-#     }
-#     return Response(data)
-#     # Handle logic for another page here
-#     #return Response({'message': 'Welcome to another page!'})
 
 def register_view(request):
     if request.method == 'POST':
@@ -79,6 +73,72 @@ def home_view(request):
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
+    serializer_class = RegisterSerializercustomer
+    
+    @swagger_auto_schema(
+        request_body=RegisterSerializercustomer,
+        responses={
+            201: openapi.Response('User created successfully', RegisterSerializercustomer),
+            400: "Bad Request"
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+   
+
+
+class LoginView(generics.GenericAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = LoginSerializercustomer
+    
+    @swagger_auto_schema(
+        request_body=LoginSerializercustomer,
+        responses={
+            200: openapi.Response('Login successful', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'phone_number': openapi.Schema(type=openapi.TYPE_STRING),
+                    'refresh': openapi.Schema(type=openapi.TYPE_STRING),
+                    'access': openapi.Schema(type=openapi.TYPE_STRING),
+                }
+            )),
+            400: "Invalid credentials"
+        }
+    )
+    
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = authenticate(username=serializer.data['username'],phone_number=serializer.data['phone_number'],password=serializer.data['password'])
+    #    phone_number=serializer.data['phone_number']
+        username= serializer.data['username']
+        phone_number= serializer.data['phone_number']
+        
+     
+        
+        if user is not None:
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'phone_number': phone_number,
+                'username':username,
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            })
+        else:
+            return Response({"detail": "Invalid credentials"}, status=400)
+        
+        
+        
+    ###########################################################################################################
+    
+        
+
+    ############################################ system user ##################################################
+
+class RegisterViewsystem(generics.CreateAPIView):
+    queryset = User.objects.all()
+    permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
     
     @swagger_auto_schema(
@@ -93,7 +153,7 @@ class RegisterView(generics.CreateAPIView):
    
 
 
-class LoginView(generics.GenericAPIView):
+class LoginViewsystem(generics.GenericAPIView):
     permission_classes = (AllowAny,)
     serializer_class = LoginSerializer
     
@@ -116,24 +176,19 @@ class LoginView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = authenticate(username=serializer.data['username'], password=serializer.data['password'])
+        user = authenticate(email=serializer.data['email'],username=serializer.data['username'], password=serializer.data['password'])
+        email= serializer.data['email']
         username= serializer.data['username']
+        
      
         
         if user is not None:
             refresh = RefreshToken.for_user(user)
             return Response({
                 'username': username,
+                'email':email,
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             })
         else:
             return Response({"detail": "Invalid credentials"}, status=400)
-        
-        
-        
-    
-        
-
-    
-    
