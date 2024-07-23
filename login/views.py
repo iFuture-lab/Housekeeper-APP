@@ -22,6 +22,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
@@ -79,12 +81,38 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
+    
+    @swagger_auto_schema(
+        request_body=RegisterSerializer,
+        responses={
+            201: openapi.Response('User created successfully', RegisterSerializer),
+            400: "Bad Request"
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
    
 
 
 class LoginView(generics.GenericAPIView):
     permission_classes = (AllowAny,)
     serializer_class = LoginSerializer
+    
+    @swagger_auto_schema(
+        request_body=LoginSerializer,
+        responses={
+            200: openapi.Response('Login successful', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'username': openapi.Schema(type=openapi.TYPE_STRING),
+                    'refresh': openapi.Schema(type=openapi.TYPE_STRING),
+                    'access': openapi.Schema(type=openapi.TYPE_STRING),
+                }
+            )),
+            400: "Invalid credentials"
+        }
+    )
+    
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -102,6 +130,8 @@ class LoginView(generics.GenericAPIView):
             })
         else:
             return Response({"detail": "Invalid credentials"}, status=400)
+        
+        
         
     
         

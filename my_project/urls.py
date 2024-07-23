@@ -40,7 +40,7 @@ schema_view  = get_schema_view(
         default_version='v1',
         description="APIs for user login",
         #terms_of_service="http://localhost:8000/api/login/",
-        terms_of_service="https://www.example.com/terms/",  # Placeholder URL
+        #terms_of_service="https://www.example.com/terms/",  # Placeholder URL
         contact=openapi.Contact(email="jenansol@hotmail.com"),
         license=openapi.License(name="BSD License"),
     ),
@@ -52,11 +52,11 @@ schema_view  = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/auth/', include('dj_rest_auth.urls')),
-    path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
+    # path('api/auth/', include('dj_rest_auth.urls')),
+    # path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
     path('api/', include('login.urls')),
-    path('swagger/login/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'), 
     # Swagger UI endpoint
     #path('swagger/register/', schema_view_v2, name='swagger-ui-v2'),  # Swagger UI endpoint
