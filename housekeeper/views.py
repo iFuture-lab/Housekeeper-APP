@@ -15,6 +15,12 @@ class HousekeeperDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Housekeeper.objects.all()
     serializer_class = HousekeeperSerializer
     permission_classes = [AllowAny] 
+    
+    
+class HousekeeperIDsView(generics.GenericAPIView):
+    def get(self, request, *args, **kwargs):
+        housekeepers = Housekeeper.objects.values_list('id', flat=True)
+        return Response(housekeepers, status=status.HTTP_200_OK)
 
 class HireRequestListCreateView(generics.ListCreateAPIView):
     queryset = HireRequest.objects.all()

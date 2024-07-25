@@ -32,8 +32,12 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework_swagger.renderers import SwaggerUIRenderer, OpenAPIRenderer
 from rest_framework.permissions import AllowAny 
-from login.views import PasswordResetRequestView,PasswordResetView
+from login.views import PasswordResetRequestView,PasswordResetView,custom_password_reset, custom_password_reset_confirm
 from django.contrib.auth import views as auth_views
+
+
+
+
 
 
 schema_view  = get_schema_view(
@@ -63,9 +67,9 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'), 
     # path('password-reset/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     # path('password-reset-confirm/', PasswordResetView.as_view(), name='password_reset_confirm'),
-    path('password-reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
+    path('password-reset/', custom_password_reset, name='password_reset'),
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
-    path('password-reset-confirm/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('password-reset-confirm/<uidb64>/<token>/', custom_password_reset_confirm, name='password_reset_confirm'),
     path('password-reset-complete/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
     # Swagger UI endpoint
     #path('swagger/register/', schema_view_v2, name='swagger-ui-v2'),  # Swagger UI endpoint

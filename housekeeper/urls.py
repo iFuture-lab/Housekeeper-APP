@@ -6,11 +6,14 @@ from .views import (
     HireRequestListCreateView, HireRequestDetailView,
     RecruitmentRequestListCreateView, RecruitmentRequestDetailView,
     TransferRequestListCreateView, TransferRequestDetailView
+   
 )
+from .views import HousekeeperIDsView
 
 urlpatterns = [
     path('housekeepers/', HousekeeperListCreateView.as_view(), name='housekeeper-list-create'),
     path('housekeepers/<int:pk>/', HousekeeperDetailView.as_view(), name='housekeeper-detail'),
+    path('housekeeper/ids/', HousekeeperIDsView.as_view(), name='housekeeper-ids'),
 
     path('hire-requests/', HireRequestListCreateView.as_view(), name='hire-request-list-create'),
     path('hire-requests/<int:pk>/', HireRequestDetailView.as_view(), name='hire-request-detail'),

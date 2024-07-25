@@ -21,3 +21,6 @@ class TransferRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = TransferRequest
         fields = ['id', 'housekeeper', 'requester', 'requested_date', 'status']
+        
+class HousekeeperIDSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
