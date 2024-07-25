@@ -8,19 +8,22 @@ from .views import (
     TransferRequestListCreateView, TransferRequestDetailView
    
 )
-from .views import HousekeeperIDsView
-
+from .views import HousekeeperIDsView, HousekeeperBatchDetailView,HireHousekeeperBatchDetailView,RecruitmentRequestBatchDetailView,TransferRequestBatchDetailView
 urlpatterns = [
     path('housekeepers/', HousekeeperListCreateView.as_view(), name='housekeeper-list-create'),
     path('housekeepers/<int:pk>/', HousekeeperDetailView.as_view(), name='housekeeper-detail'),
     path('housekeeper/ids/', HousekeeperIDsView.as_view(), name='housekeeper-ids'),
+    path('housekeepers/batch/', HousekeeperBatchDetailView.as_view(), name='housekeeper-batch-detail'),
 
     path('hire-requests/', HireRequestListCreateView.as_view(), name='hire-request-list-create'),
     path('hire-requests/<int:pk>/', HireRequestDetailView.as_view(), name='hire-request-detail'),
+    path('hirerequests/batch/', HireHousekeeperBatchDetailView.as_view(), name='hire-request-batch-detail'),
 
     path('recruitment-requests/', RecruitmentRequestListCreateView.as_view(), name='recruitment-request-list-create'),
     path('recruitment-requests/<int:pk>/', RecruitmentRequestDetailView.as_view(), name='recruitment-request-detail'),
+    path('recruitment-request/batch/', RecruitmentRequestBatchDetailView.as_view(), name='recruitment-request-batch-detail'),
 
     path('transfer-requests/', TransferRequestListCreateView.as_view(), name='transfer-request-list-create'),
     path('transfer-requests/<int:pk>/', TransferRequestDetailView.as_view(), name='transfer-request-detail'),
+    path('transfer-requests/batch/', TransferRequestBatchDetailView.as_view(), name='transfer-request-batch-detail'),
 ]

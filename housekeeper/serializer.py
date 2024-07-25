@@ -2,6 +2,26 @@ from rest_framework import serializers
 from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferRequest
 from login.models import CustomUser
 
+class DummyHousekeeperSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Housekeeper
+        fields = ['id']  # Add fields as needed
+        
+class DummyHireHousekeeperSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HireRequest
+        fields = ['id']  # Add fields as needed
+        
+class DummyTransferRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TransferRequest
+        fields = ['id']  # Add fields as needed
+        
+class DummyRecruitmentRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecruitmentRequest
+        fields = ['id']  # Add fields as needed
+
 class HousekeeperSerializer(serializers.ModelSerializer):
     class Meta:
         model = Housekeeper
