@@ -1,6 +1,7 @@
 from django.shortcuts import render,redirect
 from django.contrib.auth.models import User
 from .models import CustomUser
+# from .models import User 
 
 # Create your views here.
 from rest_framework import generics
@@ -24,7 +25,76 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from rest_framework import status, generics
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.conf import settings
+from .serializers import PasswordResetSerializer
+from .serializers import PasswordResetRequestSerializer
+from django.core.mail import send_mail
 
+
+
+
+class PasswordResetRequestView(generics.GenericAPIView):
+    permission_classes = [AllowAny] 
+    serializer_class = PasswordResetRequestSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        
+        # Generate password reset token
+        user = User.objects.filter(email=email).first()
+        if user:
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            reset_link = f"{settings.FRONTEND_URL}/reset-password/?token={token}&uid={uid}"
+            
+            # Send email (you need to configure your email backend)
+            send_mail(
+                'Password Reset Request',
+                f'Click the link to reset your password: {reset_link}',
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+            )
+        
+        return Response({"message": "Password reset email sent if the email is registered."}, status=status.HTTP_200_OK)
+
+
+
+class PasswordResetView(generics.GenericAPIView):
+    permission_classes = [AllowAny] 
+    serializer_class = PasswordResetSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        token = serializer.validated_data['token']
+        new_password = serializer.validated_data['new_password']
+
+        # Decode the user ID
+        try:
+            uid = force_text(urlsafe_base64_decode(request.query_params.get('uid')))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            user.set_password(new_password)
+            user.save()
+            return Response({"message": "Password has been reset."}, status=status.HTTP_200_OK)
+        else:
+            
+            return Response({"error": "Invalid token or user ID."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+
+        
+        
 ########################### clients views #########################################
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
@@ -71,9 +141,12 @@ def home_view(request):
 
 
 class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
+    queryset = CustomUser.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializercustomer
+
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
     
     @swagger_auto_schema(
         request_body=RegisterSerializercustomer,
@@ -90,7 +163,6 @@ class RegisterView(generics.CreateAPIView):
 class LoginView(generics.GenericAPIView):
     permission_classes = (AllowAny,)
     serializer_class = LoginSerializercustomer
-    
     @swagger_auto_schema(
         request_body=LoginSerializercustomer,
         responses={
@@ -110,18 +182,16 @@ class LoginView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = authenticate(username=serializer.data['username'],phone_number=serializer.data['phone_number'],password=serializer.data['password'])
-    #    phone_number=serializer.data['phone_number']
-        username= serializer.data['username']
-        phone_number= serializer.data['phone_number']
-        
-     
-        
+        phone_number = serializer.validated_data['phone_number']
+        password = serializer.validated_data['password']
+        # username= serializer.validated_data['']
+
+        user = authenticate(request, phone_number=phone_number,  password=password, backend= 'login.backend.PhoneNumberBackend')
+
         if user is not None:
             refresh = RefreshToken.for_user(user)
             return Response({
-                'phone_number': phone_number,
-                'username':username,
+                'phone_number': user.phone_number,
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             })
@@ -163,32 +233,64 @@ class LoginViewsystem(generics.GenericAPIView):
             200: openapi.Response('Login successful', openapi.Schema(
                 type=openapi.TYPE_OBJECT,
                 properties={
-                    'username': openapi.Schema(type=openapi.TYPE_STRING),
+                    'email': openapi.Schema(type=openapi.TYPE_STRING),
                     'refresh': openapi.Schema(type=openapi.TYPE_STRING),
                     'access': openapi.Schema(type=openapi.TYPE_STRING),
+                    'is_staff': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                    'is_superuser': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                 }
             )),
             400: "Invalid credentials"
         }
     )
-    
-
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = authenticate(email=serializer.data['email'],username=serializer.data['username'], password=serializer.data['password'])
-        email= serializer.data['email']
-        username= serializer.data['username']
+        user = serializer.validated_data['user']
+
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'username':user.username,
+            'email': user.email,
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'is_staff': user.is_staff,
+            'is_superuser': user.is_superuser,
+            # 'role':user.role,
+        })
+    
+    # @swagger_auto_schema(
+    #     request_body=LoginSerializer,
+    #     responses={
+    #         200: openapi.Response('Login successful', openapi.Schema(
+    #             type=openapi.TYPE_OBJECT,
+    #             properties={
+    #                 'username': openapi.Schema(type=openapi.TYPE_STRING),
+    #                 'refresh': openapi.Schema(type=openapi.TYPE_STRING),
+    #                 'access': openapi.Schema(type=openapi.TYPE_STRING),
+    #             }
+    #         )),
+    #         400: "Invalid credentials"
+    #     }
+    # )
+    
+
+    # def post(self, request, *args, **kwargs):
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     user = authenticate(email=serializer.data['email'],username=serializer.data['username'], password=serializer.data['password'])
+    #     email= serializer.data['email']
+    #     username= serializer.data['username']
         
      
         
-        if user is not None:
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'username': username,
-                'email':email,
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            })
-        else:
-            return Response({"detail": "Invalid credentials"}, status=400)
+    #     if user is not None:
+    #         refresh = RefreshToken.for_user(user)
+    #         return Response({
+    #             'username': username,
+    #             'email':email,
+    #             'refresh': str(refresh),
+    #             'access': str(refresh.access_token),
+    #         })
+    #     else:
+    #         return Response({"detail": "Invalid credentials"}, status=400)
