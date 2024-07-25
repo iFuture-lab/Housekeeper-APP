@@ -23,6 +23,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 LOGIN_URL = '/api/login1/'
 LOGIN_REDIRECT_URL = '/api/home/'
 
+CSRF_TRUSTED_ORIGINS=['https://194.5.157.162']
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
