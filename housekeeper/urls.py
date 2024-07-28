@@ -15,7 +15,7 @@ urlpatterns = [
     path('housekeepers/<int:pk>/', HousekeeperDetailView.as_view(), name='housekeeper-detail'),
     path('housekeeper/ids/', HousekeeperIDsView.as_view(), name='housekeeper-ids'),
     path('housekeepers/batch/', HousekeeperBatchDetailView.as_view(), name='housekeeper-batch-detail'),
-    path('housekeepers/DeleteMany/', HousekeeperBatchDeleteView.as_view(), name='housekeeper-delete-detail'),
+    #path('housekeepers/DeleteMany/', HousekeeperBatchDeleteView.as_view(), name='housekeeper-delete-detail'),
     path('housekeepers/available/', AvailableHousekeeper.as_view(), name='available-housekeeper-list'),
     
     
