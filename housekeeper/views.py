@@ -146,6 +146,20 @@ class HireHousekeeperBatchDetailView(APIView):
         # Return the serialized data
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+    
+    
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'ids',
+                openapi.IN_QUERY,
+                description="Comma-separated list of IDs",
+                type=openapi.TYPE_STRING
+            )
+        ]
+    )
+    
+    
     def delete(self, request, *args, **kwargs):
         # Extract the 'ids' parameter from the query parameters
         ids = request.query_params.get('ids', '')
@@ -264,6 +278,19 @@ class RecruitmentRequestBatchDetailView(APIView):
         
         # Return the serialized data
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'ids',
+                openapi.IN_QUERY,
+                description="Comma-separated list of IDs",
+                type=openapi.TYPE_STRING
+            )
+        ]
+    )
+    
     
     def delete(self, request, *args, **kwargs):
         # Extract the 'ids' parameter from the query parameters
@@ -389,6 +416,18 @@ class TransferRequestBatchDetailView(APIView):
         
         # Return the serialized data
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'ids',
+                openapi.IN_QUERY,
+                description="Comma-separated list of IDs",
+                type=openapi.TYPE_STRING
+            )
+        ]
+    )
     
     
     def delete(self, request, *args, **kwargs):
