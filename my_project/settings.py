@@ -45,7 +45,9 @@ ALLOWED_HOSTS = ['194.5.157.162','localhost']
 INSTALLED_APPS = [
     'login',
     'housekeeper',
+    'nationality',
     'role',
+    'django_filters',
     'rest_framework',
     'rest_framework_swagger',
     'rest_framework.authtoken',
@@ -75,6 +77,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
 
 ACCOUNT_EMAIL_VERIFICATION = 'none'

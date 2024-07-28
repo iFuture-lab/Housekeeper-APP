@@ -40,11 +40,13 @@ class RegisterSerializercustomer(serializers.ModelSerializer):
         ref_name = 'RegisterSerializercustomer'  # Explicitly set ref_name
         model = CustomUser
         #model = UserModel
-        fields = ('username', 'password','password2','phone_number','first_name', 'last_name')
+        fields = ('fullName','phone_number','password','password2','dateOfBirth', 'nationalID')
         extra_kwargs = {
-            'first_name': {'required': True},
-            'last_name': {'required': True},
-            'phone_number': {'required': True}
+            'dateOfBirth': {'required': True},
+            'nationalID': {'required': True},
+            'phone_number': {'required': True},
+            'fullName': {'required': True}
+            
         }
         
     def validate(self, attrs):
@@ -54,10 +56,10 @@ class RegisterSerializercustomer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = CustomUser.objects.create_user(
-            username=validated_data['username'],
+            fullName=validated_data['fullName'],
             phone_number=validated_data['phone_number'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
+            nationalID=validated_data['nationalID'],
+            dateOfBirth=validated_data['dateOfBirth'],
             password=validated_data['password'],
             # password2=validated_data['password2'],
         )

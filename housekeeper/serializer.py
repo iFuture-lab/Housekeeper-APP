@@ -3,11 +3,40 @@ from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferReques
 from login.models import CustomUser
 
 
+
+
+####################updating Status#####################################
+
+class UpdateHireRequest(serializers.ModelSerializer):
+    class Meta:
+        model = HireRequest
+        #ids = serializers.ListField(child=serializers.IntegerField(), write_only=True)
+        fields = ['status','id']
+
+
 class DeleteHousekeeper(serializers.ModelSerializer):
     class Meta:
         model = Housekeeper
         fields=['id']
     
+    
+
+class DeleteHireRequest(serializers.ModelSerializer):
+    class Meta:
+        model = HireRequest
+        fields=['id']
+        
+
+class DeleteRecruitmentRequest(serializers.ModelSerializer):
+    class Meta:
+        model = RecruitmentRequest
+        fields=['id']
+        
+
+class DeleteTransferRequest(serializers.ModelSerializer):
+    class Meta:
+        model = TransferRequest
+        fields=['id']
 
 class DummyHousekeeperSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,7 +61,7 @@ class DummyRecruitmentRequestSerializer(serializers.ModelSerializer):
 class HousekeeperSerializer(serializers.ModelSerializer):
     class Meta:
         model = Housekeeper
-        fields = ['id', 'Name', 'Age', 'nationality', 'isactive', 'isvailability', 'pricePerMonth']
+        fields = ['id', 'Name', 'Age', 'nationality', 'isactive', 'is_available',]
 
 class HireRequestSerializer(serializers.ModelSerializer):
     class Meta:
