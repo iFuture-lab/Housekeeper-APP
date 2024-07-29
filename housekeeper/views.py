@@ -14,21 +14,53 @@ from .serializer import HousekeeperSerializer, HireRequestSerializer, Recruitmen
 from .serializer import DummyHousekeeperSerializer,HousekeeperIDSerializer,DummyHireHousekeeperSerializer,DummyRecruitmentRequestSerializer,DummyTransferRequestSerializer,DeleteHousekeeper,UpdateHireRequest
 from.models import Status
 from .filter import HousekeeperFilter
+from django.db import transaction
+from .filter import StatusFilter
 
 
-###################################filter#################################
+################################filter for request Status####################################################
+
+
+class RecruitmentListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+    queryset = RecruitmentRequest.objects.all()
+    serializer_class = HousekeeperSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = StatusFilter
+
+class HireRequestListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+    queryset = HireRequest.objects.all()
+    serializer_class = HireRequestSerializer
+    # filter_backends = [DjangoFilterBackend]
+    filterset_class = StatusFilter
+
+class TransferRequestListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+    queryset = TransferRequest.objects.all()
+    serializer_class = TransferRequestSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = StatusFilter
+
+
+
+
+
+###################################filter for nationallity, Age, is_avalibale #################################
 
 class AvailableHousekeeper(generics.ListAPIView):
     permission_classes = [AllowAny]
     queryset = Housekeeper.objects.all()
     serializer_class = HousekeeperSerializer
     filter_backends = [DjangoFilterBackend]
+    #filterset_fields = ['is_available', 'nationality','isactive','Age']
     filterset_class = HousekeeperFilter
     
     
 class HousekeeperBatchDetailView(APIView):
     permission_classes = [AllowAny]
     serializer_class = DummyHousekeeperSerializer
+    
      
     @swagger_auto_schema(
          manual_parameters=[
@@ -218,6 +250,7 @@ class HireRequestDetailView(generics.RetrieveUpdateDestroyAPIView):
 class HousekeeperBatchStatusUpdateView(APIView):
     serializer_class= UpdateHireRequest
     permission_classes = [AllowAny]
+    
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
@@ -236,7 +269,7 @@ class HousekeeperBatchStatusUpdateView(APIView):
     )
     
     
- 
+    @transaction.atomic 
     def patch(self, request, *args, **kwargs):
         # Extract the 'ids' and 'status' parameters from the query parameters
         ids = request.query_params.get('ids', '')
@@ -259,14 +292,30 @@ class HousekeeperBatchStatusUpdateView(APIView):
 
         # Query the Housekeeper objects with the given IDs
         housekeepers = HireRequest.objects.filter(id__in=ids)
-
         if not housekeepers.exists():
             return Response({"error": "No Hire Requests found for the provided IDs."}, status=status.HTTP_404_NOT_FOUND)
 
         # Update the status field for the queried Housekeeper objects
         housekeepers.update(status=new_status)
+        # Update Status and Housekeeper Availability
+        for hire_request in housekeepers:
+            hire_request.status = new_status
+            hire_request.save()  # Save to trigger the update
+
+            if new_status.Status == "Approved":
+                housekeeper = hire_request.housekeeper
+                housekeeper.is_available = False
+                housekeeper.save()
+            else:
+                housekeeper = hire_request.housekeeper
+                housekeeper.is_available = True
+                housekeeper.save()
+                
+                
+                         
         
         return Response({"message": "Status updated successfully."}, status=status.HTTP_200_OK)
+     
         
     
     
@@ -370,8 +419,7 @@ class RecruitmentBatchStatusUpdateView(APIView):
         ]
     )
     
-    
- 
+    @transaction.atomic
     def patch(self, request, *args, **kwargs):
         # Extract the 'ids' and 'status' parameters from the query parameters
         ids = request.query_params.get('ids', '')
@@ -400,7 +448,19 @@ class RecruitmentBatchStatusUpdateView(APIView):
 
         # Update the status field for the queried Housekeeper objects
         Recruitment.update(status=new_status)
-        
+        for hire_request in Recruitment:
+            hire_request.status = new_status
+            hire_request.save()  # Save to trigger the update
+
+            if new_status.Status == "Approved":
+                housekeeper = hire_request.housekeeper
+                housekeeper.is_available = False
+                housekeeper.save()
+            else:
+                housekeeper = hire_request.housekeeper
+                housekeeper.is_available = True
+                housekeeper.save()
+                   
         return Response({"message": "Status updated successfully."}, status=status.HTTP_200_OK)
         
     
@@ -508,7 +568,7 @@ class TransferBatchStatusUpdateView(APIView):
         ]
     )
     
- 
+    @transaction.atomic
     def patch(self, request, *args, **kwargs):
         # Extract the 'ids' and 'status' parameters from the query parameters
         ids = request.query_params.get('ids', '')
@@ -537,6 +597,19 @@ class TransferBatchStatusUpdateView(APIView):
 
         # Update the status field for the queried Housekeeper objects
         Transfer.update(status=new_status)
+        
+        for hire_request in Transfer:
+            hire_request.status = new_status
+            hire_request.save()  # Save to trigger the update
+
+            if new_status.Status == "Approved":
+                housekeeper = hire_request.housekeeper
+                housekeeper.is_available = False
+                housekeeper.save()
+            else:
+                housekeeper = hire_request.housekeeper
+                housekeeper.is_available = True
+                housekeeper.save()
         
         return Response({"message": "Status updated successfully."}, status=status.HTTP_200_OK)
         

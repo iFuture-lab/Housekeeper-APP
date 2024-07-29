@@ -1,6 +1,15 @@
 from rest_framework import serializers
-from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferRequest
+from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferRequest,Status
 from login.models import CustomUser
+from nationality.views import NationalitySerializer
+
+
+#######################Status##################################
+
+class StatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Status
+        fields = ['id', 'Status']
 
 
 
@@ -59,21 +68,26 @@ class DummyRecruitmentRequestSerializer(serializers.ModelSerializer):
         fields = ['id']  # Add fields as needed
 
 class HousekeeperSerializer(serializers.ModelSerializer):
+    nationality = NationalitySerializer()  # To display related Nationality details
+    
     class Meta:
         model = Housekeeper
         fields = ['id', 'Name', 'Age', 'nationality', 'isactive', 'is_available',]
 
 class HireRequestSerializer(serializers.ModelSerializer):
+    status = StatusSerializer()
     class Meta:
         model = HireRequest
         fields = ['id', 'housekeeper', 'requester', 'requester_contact', 'request_date', 'status']
 
 class RecruitmentRequestSerializer(serializers.ModelSerializer):
+    status = StatusSerializer()
     class Meta:
         model = RecruitmentRequest
         fields = ['id', 'housekeeper', 'requester', 'request_contact', 'visa_status', 'requested_date', 'status']
 
 class TransferRequestSerializer(serializers.ModelSerializer):
+    status = StatusSerializer()
     class Meta:
         model = TransferRequest
         fields = ['id', 'housekeeper', 'requester', 'requested_date', 'status']

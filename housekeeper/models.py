@@ -2,6 +2,11 @@ from django.db import models
 from login.models import CustomUser
 from django.utils import timezone
 from nationality.models import Nationallity
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.apps import AppConfig
+
+
 
 
 class Status(models.Model):
@@ -17,7 +22,7 @@ class Housekeeper(models.Model):
     Age= models.IntegerField()
     nationality= models.ForeignKey(Nationallity, on_delete=models.CASCADE)  # Link to User model 
     isactive = models.BooleanField(default=True)  # Ensure parentheses are used
-    is_available = models.BooleanField(default=False)  # Ensure parentheses are used
+    is_available = models.BooleanField(default=True)  # Ensure parentheses are used
     #pricePerMonth=models.FloatField(default=0.0)
 
     
@@ -36,6 +41,20 @@ class HireRequest(models.Model):
     def __str__(self):
         return f"Hire Request by {self.requester.fullName} for Housekeeper {self.housekeeper.Name}"
     
+    ######################### update available ##################
+# @receiver(post_save, sender=HireRequest)
+# def update_housekeeper_availability(sender, instance, **kwargs):
+#     if instance.status.Status == "Approved":
+#         housekeeper = instance.housekeeper
+#         housekeeper.is_available = False
+#         housekeeper.save()
+        
+#         print(f"Housekeeper {housekeeper.Name} availability set to False")
+#     else:
+#         print(f"HireRequest {instance.id} status is {instance.status.Status}")
+
+
+
     
 class RecruitmentRequest(models.Model):
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='recruitment_requests')
