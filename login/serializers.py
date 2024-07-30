@@ -6,26 +6,86 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
 from django.contrib.auth import get_user_model
-from .models import User
+# from .models import User
+from django.contrib.auth.tokens import default_token_generator
+
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
-UserModel = get_user_model()
+# UserModel = get_user_model()
 
 
-class PasswordResetRequestSerializer(serializers.Serializer):
+####################################Admin Reset Password#############################
+
+class AdminPasswordResetSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
-class PasswordResetSerializer(serializers.Serializer):
+    def validate_email(self, value):
+        try:
+            self.user = User.objects.get(email=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError(_('User with this email does not exist.'))
+        return value
+
+    def save(self):
+        token = default_token_generator.make_token(self.user)
+        # Send this token to the user via email
+        # Example: send_email(self.user.email, f'Your reset token is {token}')
+        return token
+
+class AdminPasswordResetConfirmSerializer(serializers.Serializer):
+    email = serializers.EmailField()
     token = serializers.CharField()
     new_password = serializers.CharField(write_only=True)
-    new_password2 = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        if attrs['new_password'] != attrs['new_password2']:
-            raise serializers.ValidationError({"new_password": "Passwords must match."})
-        return attrs    
+        self.user = User.objects.get(email=attrs['email'])
+        if not default_token_generator.check_token(self.user, attrs['token']):
+            raise serializers.ValidationError(_('Invalid token or expired.'))
+        return attrs
+
+    def save(self):
+        self.user.set_password(self.validated_data['new_password'])
+        self.user.save()
+
+
+###########################Clients##################################################
+
+class PasswordResetSerializer(serializers.Serializer):
+    phone_number = serializers.CharField()
+    new_password = serializers.CharField(write_only=True)
+    def validate_phone_number(self, value):
+        try:
+            self.user = CustomUser.objects.get(phone_number=value)
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError(_('User with this phone number does not exist.'))
+        return value
+
+    def save(self):
+        token = default_token_generator.make_token(self.user)
+        # You can send this token via SMS to the user's phone number
+        return token
+    
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    phone_number = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        self.user = CustomUser.objects.get(phone_number=attrs['phone_number'])
+        if not default_token_generator.check_token(self.user, attrs['token']):
+            raise serializers.ValidationError(_('Invalid token or expired.'))
+        return attrs
+
+    def save(self):
+        self.user.set_password(self.validated_data['new_password'])
+        self.user.save()
     
     
+    
+    ##################################################################################################3
     
 
 
@@ -104,7 +164,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         ref_name = 'RegisterSerializer'  # Explicitly set ref_name
         model = User
-        fields = ('username', 'password','password2', 'email', 'first_name', 'last_name','role')
+        fields = ('username', 'password','password2', 'email', 'first_name', 'last_name')
         extra_kwargs = {
             'first_name': {'required': True},
             'last_name': {'required': True},

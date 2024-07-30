@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 #from phonenumber_field.modelfields import PhoneNumberField
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -8,6 +8,7 @@ from role.models import Role
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils import timezone
+
 
 # Create your models here.# login/models.py
 
@@ -90,6 +91,11 @@ class User(models.Model):
     
 # class RoleUser(AbstractUser):
 #     role = models.ForeignKey(Role, on_delete=models.CASCADE, null=True, blank=True)
+
+
+# class AdminUser(AbstractUser):
+#     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
+    
     
 
     

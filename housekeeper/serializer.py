@@ -68,26 +68,25 @@ class DummyRecruitmentRequestSerializer(serializers.ModelSerializer):
         fields = ['id']  # Add fields as needed
 
 class HousekeeperSerializer(serializers.ModelSerializer):
-    nationality = NationalitySerializer()  # To display related Nationality details
-    
+  
     class Meta:
         model = Housekeeper
-        fields = ['id', 'Name', 'Age', 'nationality', 'isactive', 'is_available',]
+        fields = ['id', 'Name', 'Age', 'nationality', 'isactive', 'is_available','worked_before']
 
 class HireRequestSerializer(serializers.ModelSerializer):
-    status = StatusSerializer()
+    # status = StatusSerializer()
     class Meta:
         model = HireRequest
         fields = ['id', 'housekeeper', 'requester', 'requester_contact', 'request_date', 'status']
 
 class RecruitmentRequestSerializer(serializers.ModelSerializer):
-    status = StatusSerializer()
+    # status = StatusSerializer()
     class Meta:
         model = RecruitmentRequest
         fields = ['id', 'housekeeper', 'requester', 'request_contact', 'visa_status', 'requested_date', 'status']
 
 class TransferRequestSerializer(serializers.ModelSerializer):
-    status = StatusSerializer()
+    # status = StatusSerializer()
     class Meta:
         model = TransferRequest
         fields = ['id', 'housekeeper', 'requester', 'requested_date', 'status']

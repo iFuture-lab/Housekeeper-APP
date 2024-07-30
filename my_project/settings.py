@@ -14,7 +14,8 @@ from pathlib import Path
 import os
 
 
-# AUTH_USER_MODEL = 'login.CustomUser'
+# AUTH_USER_MODEL = 'login.AdminUser'
+
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
