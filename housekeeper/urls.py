@@ -8,8 +8,9 @@ from .views import (
     TransferRequestListCreateView, TransferRequestDetailView
    
 )
-from .views import HousekeeperIDsView, HousekeeperBatchDeleteView,AvailableHousekeeper,TransferBatchStatusUpdateView,RecruitmentBatchStatusUpdateView,HireRequestListView,TransferRequestListView
+from .views import HousekeeperIDsView,AvailableHousekeeper,TransferBatchStatusUpdateView,RecruitmentBatchStatusUpdateView,HireRequestListView,TransferRequestListView
 from.views import HousekeeperBatchDetailView,HireHousekeeperBatchDetailView,RecruitmentRequestBatchDetailView,TransferRequestBatchDetailView,HousekeeperBatchStatusUpdateView,RecruitmentListView
+from .status_view import StatusCreateView,StatusDetailView,StatusBatchDetailView
 urlpatterns = [
     path('housekeepers/', HousekeeperListCreateView.as_view(), name='housekeeper-list-create'),
     path('housekeepers/<int:pk>/', HousekeeperDetailView.as_view(), name='housekeeper-detail'),
@@ -37,6 +38,12 @@ urlpatterns = [
     path('transfer-requests/<int:pk>/', TransferRequestDetailView.as_view(), name='transfer-request-detail'),
     path('transfer-requests/batch/', TransferRequestBatchDetailView.as_view(), name='transfer-request-batch-detail'),
     path('transfer-requests/batch/status', TransferBatchStatusUpdateView.as_view(), name='transfer-request-batch-detail'), 
-    path('transfer-requests/status/filter',TransferRequestListView.as_view(), name='transfer-request-batch-status-filter'),   
+    path('transfer-requests/status/filter',TransferRequestListView.as_view(), name='transfer-request-batch-status-filter'),
+    
+    
+    path('status/',StatusCreateView.as_view(), name='status-create'),
+    path('status/<int:pk>/',StatusDetailView.as_view(), name='status-detail'),
+    path('status/batch/',StatusBatchDetailView.as_view(), name='status-batch'),
+    
    
 ]

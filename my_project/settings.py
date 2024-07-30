@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'housekeeper',
     'nationality',
     'role',
+    'service_type',
+    'perice_per_nationality',
     'django_filters',
     'rest_framework',
     'rest_framework_swagger',
@@ -143,6 +145,7 @@ MIDDLEWARE = [
  
      
 ]
+
 CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_METHODS = [

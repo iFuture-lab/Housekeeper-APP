@@ -35,6 +35,7 @@ class HireRequest(models.Model):
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='hire_requests',)
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
     requester_contact = models.CharField(max_length=100)
+    hire_duration=models.IntegerField
     request_date = models.DateField(default=timezone.now)  # Set default to today's date
     #status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], default='Pending')
     status= models.ForeignKey(Status, on_delete=models.CASCADE)  # Link to Status model
@@ -68,6 +69,7 @@ class RecruitmentRequest(models.Model):
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='recruitment_requests')
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
     request_contact = models.CharField(max_length=100)
+    recruitment_duration=models.IntegerField
     visa_status= models.BooleanField(default=False)
     requested_date = models.DateField(default=timezone.now) 
     #status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], default='Pending')
@@ -80,6 +82,7 @@ class RecruitmentRequest(models.Model):
 class TransferRequest(models.Model):
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='transfer_requests')
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
+    # request_contact = models.CharField(max_length=100)
     requested_date = models.DateField(default=timezone.now) 
     status= models.ForeignKey(Status, on_delete=models.CASCADE,default='Pending')  # Link to Status model
     #status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], default='Pending')

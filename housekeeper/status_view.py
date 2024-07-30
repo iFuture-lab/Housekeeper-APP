@@ -1,7 +1,7 @@
-from .models import Nationallity
+from .models import Status
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
-from .serializers import NationalitySerializer
+from .serializer import StatusSerializer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework import generics
@@ -10,23 +10,23 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-class NationalityCreateView(generics.ListCreateAPIView):
-    queryset = Nationallity.objects.all()
-    serializer_class = NationalitySerializer
+class StatusCreateView(generics.ListCreateAPIView):
+    queryset = Status.objects.all()
+    serializer_class = StatusSerializer
     permission_classes = [AllowAny] 
 
-class NationalityRequestDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Nationallity.objects.all()
-    serializer_class = NationalitySerializer
+class StatusDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Status.objects.all()
+    serializer_class = StatusSerializer
     permission_classes = [AllowAny] 
     
     
     
 ################# Get manay & delete manay ################################
 
-class NationalitiesBatchDetailView(APIView):
+class StatusBatchDetailView(APIView):
     permission_classes = [AllowAny]
-    serializer_class = NationalitySerializer
+    serializer_class = StatusSerializer
      
     @swagger_auto_schema(
          manual_parameters=[
@@ -50,10 +50,10 @@ class NationalitiesBatchDetailView(APIView):
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Query the Housekeeper objects with the given IDs
-        national = Nationallity.objects.filter(id__in=ids)
+        state = Status.objects.filter(id__in=ids)
 
         # Serialize the data
-        serializer = NationalitySerializer(national, many=True)
+        serializer = StatusSerializer(state, many=True)
         
         # Return the serialized data
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -82,7 +82,7 @@ class NationalitiesBatchDetailView(APIView):
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Delete the Housekeeper objects with the given IDs
-        count, _ = Nationallity.objects.filter(id__in=ids).delete()
+        count, _ =Status.objects.filter(id__in=ids).delete()
 
         # Return the count of deleted objects
         return Response({"deleted": count}, status=status.HTTP_204_NO_CONTENT)

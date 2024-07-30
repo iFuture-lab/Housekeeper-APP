@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferRequest,Status
 from login.models import CustomUser
 from nationality.views import NationalitySerializer
+from nationality.models import Nationallity
 
 
 #######################Status##################################
@@ -68,6 +69,7 @@ class DummyRecruitmentRequestSerializer(serializers.ModelSerializer):
         fields = ['id']  # Add fields as needed
 
 class HousekeeperSerializer(serializers.ModelSerializer):
+    # nationality = serializers.PrimaryKeyRelatedField(queryset=Nationallity.objects.all())
   
     class Meta:
         model = Housekeeper
