@@ -1,11 +1,12 @@
 from django.urls import path,include
-from .views import RegisterView, LoginView,home_view,login_view,register_view,LoginViewsystem,RegisterViewsystem
+from .views import RegisterView, LoginView,home_view,login_view,register_view,LoginViewsystem,RegisterViewsystem,LogoutView
 from . views import PasswordResetView, PasswordResetConfirmView,AdminPasswordResetConfirmView,AdminPasswordResetView
 # urls.py
 
 urlpatterns = [
     path('register/clients', RegisterView.as_view(), name='auth_register_clients'),
     path('login/clients', LoginView.as_view(), name='auth_login_clients'),
+    path('logout/clients', LogoutView.as_view(), name='auth_login_clients'),
     path('register/admin', RegisterViewsystem.as_view(), name='auth_register'),
     path('login/admin', LoginViewsystem.as_view(), name='auth_login'),
     path('password-reset/clients', PasswordResetView.as_view(), name='password_reset'),

@@ -1,4 +1,7 @@
 from django.shortcuts import render,redirect
+import logging
+
+logger = logging.getLogger(__name__)
 #from django.contrib.auth.models import User
 from .models import CustomUser
 # from .models import User 
@@ -32,6 +35,7 @@ from django.utils.encoding import force_bytes
 from django.conf import settings
 from .serializers import PasswordResetSerializer,PasswordResetConfirmSerializer,AdminPasswordResetSerializer, AdminPasswordResetConfirmSerializer
 from django.core.mail import send_mail
+from rest_framework.views import APIView
 
 
 from django.contrib.auth import views as auth_views
@@ -41,6 +45,11 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 from django.contrib.auth import get_user_model
+
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import OutstandingToken, BlacklistedToken
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from .models import BlacklistedToken
 
 User = get_user_model()
 
@@ -159,7 +168,47 @@ class RegisterView(generics.CreateAPIView):
     )
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
+    
+    
+    
+class LogoutView(APIView):
+    #permission_classes = (IsAuthenticated,)
+    
+    permission_classes = (AllowAny,)
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'refresh': openapi.Schema(type=openapi.TYPE_STRING),
+            },
+            required=['refresh']
+        ),
+        responses={
+            200: "Logout successful",
+            400: "Invalid token or no token provided",
+        }
+    )
    
+
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return Response({'detail': 'No refresh token provided'}, status=400)
+
+        try:
+            # Check if the token is already blacklisted
+            if BlacklistedToken.objects.filter(token=refresh_token).exists():
+                return Response({'detail': 'Token is already blacklisted'}, status=400)
+
+            # Add the token to the blacklist
+            BlacklistedToken.objects.create(token=refresh_token)
+            return Response({'detail': 'Logout successful'}, status=200)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=400)
+    
+
+    
+    
 
 
 class LoginView(generics.GenericAPIView):
