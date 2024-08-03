@@ -1,11 +1,3 @@
-# from django.db import models
-# from login.models import CustomUser
-# from django.utils import timezone
-# from nationality.models import Nationallity
-# from django.db.models.signals import post_save
-# from django.dispatch import receiver
-# from django.apps import AppConfig
-# from perice_per_nationality.models import PericePerNationality
 
 from django.db import models
 from django.utils import timezone

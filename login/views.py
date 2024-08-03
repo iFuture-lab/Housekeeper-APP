@@ -310,38 +310,10 @@ class LoginViewsystem(generics.GenericAPIView):
             # 'role':user.role,
         })
     
-    # @swagger_auto_schema(
-    #     request_body=LoginSerializer,
-    #     responses={
-    #         200: openapi.Response('Login successful', openapi.Schema(
-    #             type=openapi.TYPE_OBJECT,
-    #             properties={
-    #                 'username': openapi.Schema(type=openapi.TYPE_STRING),
-    #                 'refresh': openapi.Schema(type=openapi.TYPE_STRING),
-    #                 'access': openapi.Schema(type=openapi.TYPE_STRING),
-    #             }
-    #         )),
-    #         400: "Invalid credentials"
-    #     }
-    # )
+
     
 
-    # def post(self, request, *args, **kwargs):
-    #     serializer = self.get_serializer(data=request.data)
-    #     serializer.is_valid(raise_exception=True)
-    #     user = authenticate(email=serializer.data['email'],username=serializer.data['username'], password=serializer.data['password'])
-    #     email= serializer.data['email']
-    #     username= serializer.data['username']
-        
+  
      
         
-    #     if user is not None:
-    #         refresh = RefreshToken.for_user(user)
-    #         return Response({
-    #             'username': username,
-    #             'email':email,
-    #             'refresh': str(refresh),
-    #             'access': str(refresh.access_token),
-    #         })
-    #     else:
-    #         return Response({"detail": "Invalid credentials"}, status=400)
+    

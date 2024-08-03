@@ -21,8 +21,8 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 #LOGIN_URL = '/api/login/'  # Adjust this to match your actual login endpoint
-LOGIN_URL = '/api/login1/'
-LOGIN_REDIRECT_URL = '/api/home/'
+# LOGIN_URL = '/api/login1/'
+# LOGIN_REDIRECT_URL = '/api/home/'
 
 CSRF_TRUSTED_ORIGINS=['https://194.5.157.162']
 
