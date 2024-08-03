@@ -320,6 +320,22 @@ class LoginViewsystem(generics.GenericAPIView):
     
 class LogoutViewsystem(APIView):
     permission_classes = (AllowAny,)
+    
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'refresh_token': openapi.Schema(type=openapi.TYPE_STRING),
+            },
+            required=['refresh_token']
+        ),
+        responses={
+            200: "Logout successful",
+            400: "Invalid token or no token provided",
+        }
+    )
+    
+    
 
     def post(self, request, *args, **kwargs):
         try:
