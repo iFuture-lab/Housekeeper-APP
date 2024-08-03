@@ -10,7 +10,7 @@ from .models import CustomUser
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken,TokenError
 from django.contrib.auth import authenticate,login
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth.decorators import login_required
@@ -21,7 +21,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate, login
-from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -172,39 +171,47 @@ class RegisterView(generics.CreateAPIView):
     
     
 class LogoutView(APIView):
-    #permission_classes = (IsAuthenticated,)
-    
     permission_classes = (AllowAny,)
+
     @swagger_auto_schema(
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                'refresh': openapi.Schema(type=openapi.TYPE_STRING),
+                'refresh_token': openapi.Schema(type=openapi.TYPE_STRING),
             },
-            required=['refresh']
+            required=['refresh_token']
         ),
         responses={
             200: "Logout successful",
             400: "Invalid token or no token provided",
         }
     )
-   
-
     def post(self, request, *args, **kwargs):
-        refresh_token = request.data.get('refresh')
+        refresh_token = request.data.get('refresh_token')
         if not refresh_token:
-            return Response({'detail': 'No refresh token provided'}, status=400)
+            return Response({'detail': 'No refresh token provided'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            # Decode and validate the refresh token
+            token = RefreshToken(refresh_token)
+            user_id = token.get('user_id')
+            
+             # Use the CustomUser model to check if the user exists
+            if not CustomUser.objects.filter(id=user_id).exists():
+                return Response({'detail': 'Invalid token or user does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+
             # Check if the token is already blacklisted
             if BlacklistedToken.objects.filter(token=refresh_token).exists():
-                return Response({'detail': 'Token is already blacklisted'}, status=400)
+                return Response({'detail': 'Token is already blacklisted'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Add the token to the blacklist
             BlacklistedToken.objects.create(token=refresh_token)
-            return Response({'detail': 'Logout successful'}, status=200)
+            return Response({'detail': 'Logout successful'}, status=status.HTTP_200_OK)
+        except TokenError as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({'detail': str(e)}, status=400)
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
     
 
     
@@ -310,6 +317,37 @@ class LoginViewsystem(generics.GenericAPIView):
             # 'role':user.role,
         })
     
+    
+class LogoutViewsystem(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            refresh_token = request.data.get('refresh_token')
+            if not refresh_token:
+                return Response({"detail": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+            
+            # Decode the refresh token to get the user
+            token = RefreshToken(refresh_token)
+            user_id = token.get('user_id')
+                
+            if not User.objects.filter(id=user_id).exists():
+                return Response({'detail': 'Invalid token or user does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # # Check if the token is already blacklisted
+            #     if BlacklistedToken.objects.filter(token=refresh_token).exists():
+            #         return Response({'detail': 'Token is already blacklisted'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # # Add the token to the blacklist
+            #     BlacklistedToken.objects.create(token=refresh_token)
+            return Response({'detail': 'Logout successful'}, status=status.HTTP_200_OK)
+        except TokenError as e:
+                return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+             
 
     
 

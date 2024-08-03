@@ -72,39 +72,29 @@ class CustomUser(AbstractBaseUser):
         return self.fullName
     
 
-    
-    
-    
-    
+        
 ############### System Users############################
     
-class User(models.Model):
+# class User(models.Model):
     
-    # def get_default_role():
-    #     return Role.objects.get(name='admin')
+#     # def get_default_role():
+#     #     return Role.objects.get(name='admin')
 
-    username = models.CharField(max_length=150, unique=True)
-    password = models.CharField(max_length=128)  # Ensure you hash passwords properly
-    password2 = models.CharField(max_length=128)  # Ensure you hash passwords properly
-    email = models.EmailField(unique=True)
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE, null=True, blank=True)  # Add role field
+#     username = models.CharField(max_length=150, unique=True)
+#     password = models.CharField(max_length=128)  # Ensure you hash passwords properly
+#     password2 = models.CharField(max_length=128)  # Ensure you hash passwords properly
+#     email = models.EmailField(unique=True)
+#     first_name = models.CharField(max_length=30)
+#     last_name = models.CharField(max_length=30)
+#     role = models.ForeignKey(Role, on_delete=models.CASCADE, null=True, blank=True)  # Add role field
     
-    USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = []
+#     USERNAME_FIELD = 'username'
+#     REQUIRED_FIELDS = []
 
 
-    def __str__(self):
-        return self.username
-    
-# class RoleUser(AbstractUser):
-#     role = models.ForeignKey(Role, on_delete=models.CASCADE, null=True, blank=True)
+#     def __str__(self):
+#         return self.username
 
-
-# class AdminUser(AbstractUser):
-#     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
-    
     
 
     

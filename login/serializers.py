@@ -85,10 +85,8 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     
     
     
-    ##################################################################################################3
+    ##################################################################################################
     
-
-
 
 
 
@@ -189,14 +187,8 @@ class RegisterSerializer(serializers.ModelSerializer):
     
 
 
-# class LoginSerializer(DjLoginSerializer):
-#     class Meta:
-#         ref_name = "DjLoginSerializer"  # Set a unique ref_name
-
-
 class LoginSerializer(serializers.Serializer):
     username= serializers.CharField() 
-    #email= serializers.CharField()
     password = serializers.CharField()
     
     def validate(self, data):
@@ -204,13 +196,10 @@ class LoginSerializer(serializers.Serializer):
         username = data.get('username')
         password = data.get('password')
 
-        # if not email and not username:
-        #     raise serializers.ValidationError("Must include either email or username")
-
         if not password:
             raise serializers.ValidationError("Must include password")
 
-        # Authenticate using custom backend
+
         user = authenticate(
             request=self.context.get('request'),
             username=username,
@@ -225,4 +214,4 @@ class LoginSerializer(serializers.Serializer):
         return data
     
     class Meta:
-        ref_name = 'LoginSerializer'  # Explicitly set ref_name
+        ref_name = 'LoginSerializer'  

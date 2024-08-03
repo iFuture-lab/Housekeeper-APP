@@ -1,9 +1,8 @@
-# authentication.py
-
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import BlacklistedToken, CustomUser
+from .models import BlacklistedToken
+from .models import CustomUser  # Import your custom user model
 
 class CustomUserAuthentication(BaseAuthentication):
     
@@ -19,19 +18,15 @@ class CustomUserAuthentication(BaseAuthentication):
 
             # Check if the token is blacklisted
             if BlacklistedToken.objects.filter(token=token).exists():
-                print("okaaaaaaaaaaaaaaay")
                 raise AuthenticationFailed('Token has been blacklisted.')
 
             # Authenticate user based on token
             user = self._authenticate_user(token)
-            print(user)
             if not user:
-                print("my baaaaaaaaaaaaad")
                 raise AuthenticationFailed('Invalid token.')
 
             return (user, token)
         except Exception as e:
-            print(f'Authentication error: {str(e)}')
             raise AuthenticationFailed('Invalid token.')
 
     def _authenticate_user(self, token):
@@ -43,5 +38,4 @@ class CustomUserAuthentication(BaseAuthentication):
         except CustomUser.DoesNotExist:
             return None
         except Exception as e:
-            print(f"Token validation error: {str(e)}")
             return None
