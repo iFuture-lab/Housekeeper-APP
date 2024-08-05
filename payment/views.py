@@ -6,6 +6,8 @@ import hashlib
 import logging
 from datetime import datetime
 import hashlib
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,7 @@ print("Computed Hash:", hash_value)
 
 @csrf_exempt
 def payment_callback(request):
+        
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
