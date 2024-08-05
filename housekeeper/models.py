@@ -6,6 +6,22 @@ from nationality.models import Nationallity
 from service_type.models import ServiceType
 from perice_per_nationality.models import PericePerNationality
 from django.core.exceptions import ValidationError
+from django.conf import settings
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
+
+
+class ActionLog(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    action_type = models.CharField(max_length=255)
+    description = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.timestamp} - {self.action_type} by {self.user}"
 
 
 class Status(models.Model):

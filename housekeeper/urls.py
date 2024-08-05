@@ -1,6 +1,7 @@
 # urls.py
 
-from django.urls import path
+from django.urls import path,include
+from rest_framework.routers import DefaultRouter
 from .views import (
     HousekeeperListCreateView, HousekeeperDetailView,
     HireRequestListCreateView, HireRequestDetailView,
@@ -13,6 +14,13 @@ from.views import HousekeeperBatchDetailView,HireHousekeeperBatchDetailView,Recr
 from .status_view import StatusCreateView,StatusDetailView,StatusBatchDetailView
 from .religion_view import ReligionCreateView, ReligionBatchDetailView,ReligionDetailView
 from .employment_type_view import EmploymentTypeCreateView, EmploymentTypeBatchDetailView,EmploymentTypeDetailView
+# from .views import ActionLogViewSet
+
+
+
+# router = DefaultRouter()
+# router.register(r'action-logs', ActionLogViewSet)
+
 urlpatterns = [
     path('housekeepers/', HousekeeperListCreateView.as_view(), name='housekeeper-list-create'),
     path('housekeepers/<int:pk>/', HousekeeperDetailView.as_view(), name='housekeeper-detail'),
@@ -54,6 +62,7 @@ urlpatterns = [
     path('employement-type/',EmploymentTypeCreateView.as_view(), name='employement-type-create'),
     path('employement-type/<int:pk>/',EmploymentTypeDetailView.as_view(), name='employement-type-detail'),
     path('employement-type/batch/',EmploymentTypeBatchDetailView.as_view(), name='employement-type-batch'),
+    # path('action-log', include(router.urls)),
     
     
     

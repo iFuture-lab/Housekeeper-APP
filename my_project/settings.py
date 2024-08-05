@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+
+
 import os
+
 
 
 # AUTH_USER_MODEL = 'login.AdminUser'
@@ -20,6 +23,30 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'payment_logs.log'),
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
+
+
+
+
 #LOGIN_URL = '/api/login/'  # Adjust this to match your actual login endpoint
 # LOGIN_URL = '/api/login1/'
 # LOGIN_REDIRECT_URL = '/api/home/'
@@ -48,6 +75,7 @@ INSTALLED_APPS = [
     'housekeeper',
     'nationality',
     'role',
+    'payment',
     'service_type',
     'perice_per_nationality',
     'django_filters',
@@ -255,5 +283,9 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+
+
+
 
 

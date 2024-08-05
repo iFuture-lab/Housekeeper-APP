@@ -3,6 +3,13 @@ from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferReques
 from login.models import CustomUser
 from nationality.views import NationalitySerializer
 from nationality.models import Nationallity
+from .models import ActionLog
+
+
+class ActionLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ActionLog
+        fields = '__all__'
 
 
 #######################Status##################################
