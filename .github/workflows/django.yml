@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4
@@ -17,6 +16,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
@@ -27,6 +27,7 @@ jobs:
         pip install --upgrade pip
         pip install --upgrade -r requirements.txt
         pip freeze > requirements.txt
+
     - name: Install django-cors-headers
       run: |
         pip install django-cors-headers
@@ -35,7 +36,7 @@ jobs:
       run: |
         python manage.py test
 
-        - name: Set up SSH
+    - name: Set up SSH
       uses: webfactory/ssh-agent@v0.5.4
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -45,8 +46,8 @@ jobs:
         ssh -o StrictHostKeyChecking=no root@payload.ifuture.sa << 'EOF'
           cd /root/Housekeeper-APP
           git pull origin main
-          
           # Optional: Restart services or perform other deployment tasks
           # e.g., restart server, migrate database, etc.
           # systemctl restart your-service
+          # python manage.py migrate
         EOF
