@@ -51,7 +51,7 @@ LOGGING = {
 # LOGIN_URL = '/api/login1/'
 # LOGIN_REDIRECT_URL = '/api/home/'
 
-CSRF_TRUSTED_ORIGINS=['https://194.5.157.162']
+CSRF_TRUSTED_ORIGINS=['https://194.5.157.162','https://ofaq.ifuture.sa']
 
 
 # Quick-start development settings - unsuitable for production
