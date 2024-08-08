@@ -1,6 +1,6 @@
 from django.urls import path,include
 from .views import RegisterView, LoginView,home_view,login_view,register_view,LoginViewsystem,RegisterViewsystem,LogoutView,LogoutViewsystem
-from . views import PasswordResetView, PasswordResetConfirmView,AdminPasswordResetConfirmView,AdminPasswordResetView
+from . views import PasswordResetView, PasswordResetConfirmView,AdminPasswordResetConfirmView,AdminPasswordResetView,VerifyOTPView
 # urls.py
 
 urlpatterns = [
@@ -16,5 +16,6 @@ urlpatterns = [
     path('password-reset-confirm/admin', AdminPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('register1/', register_view, name='register'),
     path('login1/', login_view, name='login'),
-    path('home/',  home_view, name='home'),]
+    path('home/',  home_view, name='home'),
+    path('api/verify-otp', VerifyOTPView.as_view(), name='verify-otp'),]
 

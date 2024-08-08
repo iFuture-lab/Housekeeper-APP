@@ -49,6 +49,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from .models import BlacklistedToken
+from .utils import send_otp, verify_otp
+
+import random
+import requests
+from django.core.cache import cache
 
 User = get_user_model()
 
@@ -150,14 +155,12 @@ def home_view(request):
     return render(request, 'home.html')
 
 
+
 class RegisterView(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializercustomer
 
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
-    
     @swagger_auto_schema(
         request_body=RegisterSerializercustomer,
         responses={
@@ -165,9 +168,38 @@ class RegisterView(generics.CreateAPIView):
             400: "Bad Request"
         }
     )
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
     
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user_data = serializer.validated_data
+        phone_number = serializer.validated_data.get('phone_number')
+        
+        if send_otp(phone_number):
+            return Response({"message": "OTP sent to phone number. Please verify to complete registration."}, status=status.HTTP_201_CREATED)
+        
+        else:
+            return Response({
+                'message': 'Failed to send OTP. Please try again later.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+     
+        
+class VerifyOTPView(APIView):
+    permission_classes = (AllowAny,)
+    def post(self, request, *args, **kwargs):
+        phone_number = request.data.get('phone_number')
+        entered_otp = request.data.get('otp')
+
+        if verify_otp(phone_number, entered_otp):
+            # Proceed with registration confirmation logic
+            return Response({
+                'message': 'OTP verified successfully. Registration complete.'
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                'message': 'Invalid OTP. Please try again.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
     
     
 class LogoutView(APIView):
@@ -342,8 +374,7 @@ class LogoutViewsystem(APIView):
             refresh_token = request.data.get('refresh_token')
             if not refresh_token:
                 return Response({"detail": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-            
+ 
             # Decode the refresh token to get the user
             token = RefreshToken(refresh_token)
             user_id = token.get('user_id')

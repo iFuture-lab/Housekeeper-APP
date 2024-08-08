@@ -8,6 +8,9 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
+
+
+
 """
 
 from pathlib import Path
@@ -17,12 +20,30 @@ import os
 
 
 
+
+#####################SMS API########################################
+
+TAQNYAT_API_KEY= 'fa8ae0f9cdf8e7db6eadc41b65b87ae4'
+TAQNYAT_SENDER= 'OFAQ'
+
+
+
+
 # AUTH_USER_MODEL = 'login.AdminUser'
 
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+TEST_LOG_FILE_PATH = os.path.join(BASE_DIR, 'test_logs', 'payment.txt')
+
+# Make sure the 'test_logs' directory exists
+if not os.path.exists(os.path.dirname(TEST_LOG_FILE_PATH)):
+    os.makedirs(os.path.dirname(TEST_LOG_FILE_PATH))
+
+
 
 LOGGING = {
     'version': 1,
@@ -112,6 +133,15 @@ REST_FRAMEWORK = {
     ],
     
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day'
+    }
 }
 
 ACCOUNT_EMAIL_VERIFICATION = 'none'
@@ -126,14 +156,13 @@ AUTHENTICATION_BACKENDS = (
 
 # JWT settings
 from datetime import timedelta
-
-# Ensure the Redis backend is configured if using Redis
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://localhost:6379/1',
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
     }
 }
+
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),

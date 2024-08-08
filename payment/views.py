@@ -11,6 +11,12 @@ from drf_yasg import openapi
 
 logger = logging.getLogger(__name__)
 
+# LOG_FILE_PATH = r'C:\Users\Me\Desktop\django\Housekeeper-APP\logfile.txt'
+
+from django.conf import settings
+LOG_FILE_PATH = settings.TEST_LOG_FILE_PATH
+
+
 # Corrected variable assignment
 MERCHANT_PASS = 'e94b0b4a5ae7c51e99ca2fda42ad1bf1'
 
@@ -47,7 +53,10 @@ def payment_callback(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            logger.info('Parsed JSON data successfully.')
+            # Save raw data to file
+            with open(LOG_FILE_PATH, 'a') as log_file:
+                log_file.write(f"{datetime.now()} - {json.dumps(data)}\n")
+            logger.info('Received payment callback data: %s', data)
         except json.JSONDecodeError:
             logger.error('Invalid JSON received.')
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
@@ -79,12 +88,21 @@ def payment_callback(request):
             logger.error(f'Invalid result value: {status}.')
             return JsonResponse({'error': 'Invalid result value'}, status=400)
         
-        if 'redirect_params' in data:
+        # if 'redirect_params' in data:
+        #     try:
+        #         data['redirect_params'] = json.loads(data['redirect_params'])
+        #     except json.JSONDecodeError:
+        #         logger.error('Invalid JSON in redirect_params.')
+        #         return JsonResponse({'error': 'Invalid redirect_params format'}, status=400)
+        
+        redirect_params = data.get('redirect_params', {})
+        if isinstance(redirect_params, str):
             try:
-                data['redirect_params'] = json.loads(data['redirect_params'])
+                redirect_params = json.loads(redirect_params)
             except json.JSONDecodeError:
                 logger.error('Invalid JSON in redirect_params.')
                 return JsonResponse({'error': 'Invalid redirect_params format'}, status=400)
+
 
 
         # Extract common fields

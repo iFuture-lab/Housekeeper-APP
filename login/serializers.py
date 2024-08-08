@@ -12,6 +12,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+from .utils import send_otp, verify_otp
 
 
 # UserModel = get_user_model()
@@ -93,12 +94,14 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 class RegisterSerializercustomer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
+    #otp = serializers.CharField(write_only=True, required=True)
+
 
     class Meta:
         ref_name = 'RegisterSerializercustomer'  # Explicitly set ref_name
         model = CustomUser
         #model = UserModel
-        fields = ('fullName','phone_number','password','password2','dateOfBirth', 'nationalID')
+        fields = ('fullName','phone_number','password','password2','dateOfBirth', 'nationalID','email')
         extra_kwargs = {
             'dateOfBirth': {'required': True},
             'nationalID': {'required': True},
@@ -110,6 +113,10 @@ class RegisterSerializercustomer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
+        
+        # Verify OTP
+        # if not verify_otp(attrs['phone_number'], attrs['otp']):
+        #     raise serializers.ValidationError({"otp": "Invalid or expired OTP."})
         return attrs
 
     def create(self, validated_data):

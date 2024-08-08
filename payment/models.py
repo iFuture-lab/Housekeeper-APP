@@ -13,7 +13,8 @@ class Payment(models.Model):
         ('REFUND', 'Refund'),
         ('RECURRING', 'Recurring'),
         ('sale','Sale'),
-        ('refund','Refund')
+        ('refund','Refund'),
+        ('GET_TRANS_DETAILS','GET_TRANS_DETAILS')
     ]
     
     RESULT_CHOICES = [

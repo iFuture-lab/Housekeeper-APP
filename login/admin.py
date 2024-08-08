@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CustomUser
+from .models import CustomUser ,OtpMessage
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 
@@ -24,4 +24,5 @@ from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 
 
 admin.site.register(CustomUser)
+admin.site.register(OtpMessage)
 # admin.site.register(AdminUser,CustomUserAdmin)
