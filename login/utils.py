@@ -4,6 +4,7 @@ from django.core.cache import cache
 from django.conf import settings
 from TaqnyatSms import client
 from .models import OtpMessage
+import json
 
 
 
@@ -22,19 +23,27 @@ def send_otp(phone_number):
 
         taqnyt = client(settings.TAQNYAT_API_KEY)
         response = taqnyt.sendMsg(body, [phone_number], sender, scheduled)
+        print(response,"'''''''''''''''''''''''''''")
         
-        if response.get('status') == 'success':  # Adjust this based on actual response format
+        response_data = json.loads(response)
+        
+        if response_data.get('status') == 'success':  # Adjust this based on actual response format
             cache.set(f'otp_{phone_number}', otp, timeout=300)  # Store OTP in cache for 5 minutes
             return True
         else:
+            print(f"Failed to send OTP: {response_data}")
             return False
     except OtpMessage.DoesNotExist:
         print("OTP message template not found")
         return False
+    except json.JSONDecodeError:
+        print(f"Failed to parse response: {response}")
+        return False
     except Exception as e:
         print(f"Error sending OTP: {e}")
         return False
-
+        
+       
 def verify_otp(phone_number, entered_otp):
     cached_otp = cache.get(f'otp_{phone_number}')
     if cached_otp and cached_otp == int(entered_otp):

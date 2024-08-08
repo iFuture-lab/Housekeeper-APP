@@ -17,5 +17,5 @@ urlpatterns = [
     path('register1/', register_view, name='register'),
     path('login1/', login_view, name='login'),
     path('home/',  home_view, name='home'),
-    path('api/verify-otp', VerifyOTPView.as_view(), name='verify-otp'),]
+    path('register/verify-otp', VerifyOTPView.as_view(), name='verify-otp'),]
 
