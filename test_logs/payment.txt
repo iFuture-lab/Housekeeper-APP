@@ -2,3 +2,20 @@
 2024-08-07 13:48:02.364634 - {"action": "SALE", "result": "REDIRECT", "status": "3DS", "order_id": "1", "trans_id": "abc123", "trans_date": "2023-08-01T12:00:00", "descriptor": "Example Descriptor", "amount": "100.00", "currency": "USD", "redirect_url": "https://example.com/redirect", "redirect_params": {"param1": "value1", "param2": "value2"}, "redirect_method": "POST", "card": "1234-XXXX-XXXX-5678", "card_expiration_date": "12/25", "hash": "kkkkkkkkkkk"}
 2024-08-07 14:32:01.644348 - {"action": "SALE", "result": "REDIRECT", "status": "3DS", "order_id": "1", "trans_id": "abc123", "trans_date": "2023-08-01T12:00:00", "descriptor": "Example Descriptor", "amount": "100.00", "currency": "USD", "redirect_url": "https://example.com/redirect", "redirect_params": {"param1": "value1", "param2": "value2"}, "redirect_method": "POST", "card": "1234-XXXX-XXXX-5678", "card_expiration_date": "12/25"}
 2024-08-07 14:32:22.844222 - {"action": "SALE", "result": "REDIRECT", "status": "3DS", "order_id": "1", "trans_id": "abc123", "trans_date": "2023-08-01T12:00:00", "descriptor": "Example Descriptor", "amount": "100.00", "currency": "USD", "redirect_url": "https://example.com/redirect", "redirect_params": {"param1": "value1", "param2": "value2"}, "redirect_method": "POST", "card": "1234-XXXX-XXXX-5678", "card_expiration_date": "12/25"}
+2024-08-08 15:47:38.301504 - b''
+2024-08-08 15:47:46.833872 - b'{\r\n\r\n    "action":"SALE",\r\n    "result":"REDIRECT",\r\n    "STATUS":"fail"\r\n}'
+2024-08-08 15:50:05.350638 - b'{\r\n\r\n    "action":"SALE",\r\n    "result":"REDIRECT",\r\n    "STATUS":"fail"\r\n}'
+2024-08-08 15:50:18.704549 - b''
+2024-08-08 15:56:41.244703 - b''
+2024-08-08 16:21:53.161274 - {}
+2024-08-08 16:22:05.428298 - {}
+2024-08-08 16:40:30.378481 - {'message': 'hi'}
+2024-08-08 16:42:15.879400 - {'message': 'hi'}
+2024-08-10 12:08:35.875769 - {"phone_number": "+201558838990", "password": "jenan@123"}
+2024-08-10 14:09:48.939420 - {'refresh_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcyMzM3MjAzNywiaWF0IjoxNzIzMjg1NjM3LCJqdGkiOiJjZThkYjhlZjNhZDQ0NjJjYjI0NzU4YmY1MTY2NjE0YiIsInVzZXJfaWQiOiIwNjk5ZGVjYS00NGE3LTQxODUtYjJiNy0yNmY5MTFiNmJlY2UifQ.h_tsRrXnBvHWWhQUX1Sl87y3F_VKPa6wazuPeG0Xzq4'}
+2024-08-10 14:10:06.403259 - {'refresh_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcyMzM3MjAzNywiaWF0IjoxNzIzMjg1NjM3LCJqdGkiOiJjZThkYjhlZjNhZDQ0NjJjYjI0NzU4YmY1MTY2NjE0YiIsInVzZXJfaWQiOiIwNjk5ZGVjYS00NGE3LTQxODUtYjJiNy0yNmY5MTFiNmJlY2UifQ.h_tsRrXnBvHWWhQUX1Sl87y3F_VKPa6wazuPeG0Xzq4'}
+2024-08-10 14:11:53.253213 - {'refresh_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcyMzM3MjAzNywiaWF0IjoxNzIzMjg1NjM3LCJqdGkiOiJjZThkYjhlZjNhZDQ0NjJjYjI0NzU4YmY1MTY2NjE0YiIsInVzZXJfaWQiOiIwNjk5ZGVjYS00NGE3LTQxODUtYjJiNy0yNmY5MTFiNmJlY2UifQ.h_tsRrXnBvHWWhQUX1Sl87y3F_VKPa6wazuPeG0Xzq4'}
+2024-08-10 14:11:56.138130 - {'refresh_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcyMzM3MjAzNywiaWF0IjoxNzIzMjg1NjM3LCJqdGkiOiJjZThkYjhlZjNhZDQ0NjJjYjI0NzU4YmY1MTY2NjE0YiIsInVzZXJfaWQiOiIwNjk5ZGVjYS00NGE3LTQxODUtYjJiNy0yNmY5MTFiNmJlY2UifQ.h_tsRrXnBvHWWhQUX1Sl87y3F_VKPa6wazuPeG0Xzq4'}
+2024-08-10 14:12:28.983000 - {'refresh_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTcyMzM3MjAzNywiaWF0IjoxNzIzMjg1NjM3LCJqdGkiOiJjZThkYjhlZjNhZDQ0NjJjYjI0NzU4YmY1MTY2NjE0YiIsInVzZXJfaWQiOiIwNjk5ZGVjYS00NGE3LTQxODUtYjJiNy0yNmY5MTFiNmJlY2UifQ.h_tsRrXnBvHWWhQUX1Sl87y3F_VKPa6wazuPeG0Xzq4'}
+2024-08-10 14:12:56.349529 - {'action': 'hi'}
+2024-08-10 14:14:23.091530 - {'action': 'hi'}

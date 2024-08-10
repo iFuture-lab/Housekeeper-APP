@@ -1,11 +1,12 @@
 from django.urls import path,include
-from .views import RegisterView, LoginView,home_view,login_view,register_view,LoginViewsystem,RegisterViewsystem,LogoutView,LogoutViewsystem
-from . views import PasswordResetView, PasswordResetConfirmView,AdminPasswordResetConfirmView,AdminPasswordResetView,VerifyOTPView
+from .views import RegisterView, LoginView,home_view,login_view,register_view,LoginViewsystem,RegisterViewsystem,LogoutView,LogoutViewsystem,ResendOtpView
+from . views import PasswordResetView, PasswordResetConfirmView,AdminPasswordResetConfirmView,AdminPasswordResetView,VerifyOTPView, TokenValidationView
 # urls.py
 
 urlpatterns = [
     path('register/clients', RegisterView.as_view(), name='auth_register_clients'),
     path('login/clients', LoginView.as_view(), name='auth_login_clients'),
+    path('login/token-validate/clients', TokenValidationView.as_view(), name='auth_login_validation'),
     path('logout/clients', LogoutView.as_view(), name='auth_logout_clients'),
     path('register/admin', RegisterViewsystem.as_view(), name='auth_register'),
     path('login/admin', LoginViewsystem.as_view(), name='auth_login'),
@@ -17,5 +18,6 @@ urlpatterns = [
     path('register1/', register_view, name='register'),
     path('login1/', login_view, name='login'),
     path('home/',  home_view, name='home'),
-    path('register/verify-otp', VerifyOTPView.as_view(), name='verify-otp'),]
+    path('register/verify-otp', VerifyOTPView.as_view(), name='verify-otp'),
+    path('register/resend-otp', ResendOtpView.as_view(), name='resend-otp'),]
 

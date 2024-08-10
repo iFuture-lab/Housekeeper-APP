@@ -17,7 +17,7 @@ from .filter import HousekeeperFilter
 from django.db import transaction
 from .filter import StatusFilter
 from rest_framework.permissions import IsAuthenticated
-from .utils import ActionLoggingMixin
+from .utils import ActionLoggingMixin,send_message
 
 
 
@@ -289,14 +289,44 @@ class HireRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+    
         # Log the action
         user = request.user if request.user.is_authenticated else None
         self.log_action(
             user=user,
             action_type="Created",
-            model_name="HireRequest"
+            model_name="Housekeeper"
         )
-        return super().post(request, *args, **kwargs)
+        
+        test_mode = request.data.get('test_mode', False)
+        # Retrieve request details
+        request_details = {
+            'housekeeper': serializer.validated_data.get('housekeeper'),
+            'requester_contact': serializer.validated_data.get('requester_contact'),
+            'request_date': serializer.validated_data.get('request_date'),
+            'duration': serializer.validated_data.get('duration'),
+            'pericepernationality_id': serializer.validated_data.get('pericepernationality_id.price'),
+            'total_price': serializer.validated_data.get('total_price'),
+            'status': serializer.validated_data.get('status'),
+        }
+        
+        # Send notification to the requester with request details
+        phone_number = serializer.validated_data.get('requester_contact')
+        send_message(phone_number, request_details,test_mode=test_mode)
+        print(send_message)
+        
+        success, message = send_message(phone_number, request_details, test_mode=test_mode)
+    
+        return Response({
+        'message': message
+    }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
+
+     
 
 class HireRequestDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = HireRequest.objects.all()
@@ -523,14 +553,44 @@ class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPI
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+    
         # Log the action
         user = request.user if request.user.is_authenticated else None
         self.log_action(
             user=user,
             action_type="Created",
-            model_name="RecruitmentRequest",
+            model_name="RecruitmentRequest"
         )
-        return super().post(request, *args, **kwargs)
+        
+        test_mode = request.data.get('test_mode', False)
+        # Retrieve request details
+        request_details = {
+            'housekeeper': serializer.validated_data.get('housekeeper'),
+            'requester':serializer.validated_data.get('requester'),
+            'requester_contact': serializer.validated_data.get('requester_contact'),
+            'request_date': serializer.validated_data.get('request_date'),
+            'visa_status':serializer.validated_data.get('visa_status'),
+            'status': serializer.validated_data.get('status'),
+        }
+        
+        # Send notification to the requester with request details
+        phone_number = serializer.validated_data.get('requester_contact')
+        send_message(phone_number, request_details,test_mode=test_mode)
+        print(send_message)
+        
+        success, message = send_message(phone_number, request_details, test_mode=test_mode)
+    
+        return Response({
+        'message': message
+    }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
+
+     
+
 
 class RecruitmentRequestDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = RecruitmentRequest.objects.all()
@@ -760,6 +820,12 @@ class TransferRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIVie
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+    
         # Log the action
         user = request.user if request.user.is_authenticated else None
         self.log_action(
@@ -767,8 +833,28 @@ class TransferRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIVie
             action_type="Created",
             model_name="TransferRequest"
         )
-        return super().post(request, *args, **kwargs)
+        
+        test_mode = request.data.get('test_mode', False)
+        # Retrieve request details
+        request_details = {
+            'housekeeper': serializer.validated_data.get('housekeeper'),
+            'requester':serializer.validated_data.get('requester'),
+            'requester_contact': serializer.validated_data.get('requester_contact'),
+             'request_date': serializer.validated_data.get('request_date'),
+            'status': serializer.validated_data.get('status'),
+        }
+        
+        # Send notification to the requester with request details
+        phone_number = serializer.validated_data.get('requester_contact')
+        send_message(phone_number, request_details,test_mode=test_mode)
+        print(send_message)
+        
+        success, message = send_message(phone_number, request_details, test_mode=test_mode)
     
+        return Response({
+        'message': message
+    }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
+
     
 
 class TransferRequestDetailView(generics.RetrieveUpdateDestroyAPIView):

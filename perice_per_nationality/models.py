@@ -13,6 +13,10 @@ class PericePerNationality(models.Model):
     service_type= models.ForeignKey(ServiceType,on_delete=models.CASCADE)
     employment_type = models.ForeignKey('housekeeper.EmploymentType',on_delete=models.CASCADE,null=True)
     worked_before = models.BooleanField(default=True)
-    price=models.FloatField(default=0.0)
+    worked_before_salary = models.FloatField(null=True)  
+    new_housekeeper_salary = models.FloatField(null=True)
+    fees=models.FloatField(default=0.0)
+    is_active = models.BooleanField(default=True)
+    
     
     

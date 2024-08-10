@@ -1,4 +1,5 @@
 from django.db import models
+import uuid
 
 # Create your models here.
 
@@ -6,6 +7,7 @@ from django.db import models
     
     
 class Payment(models.Model):
+    
     ACTION_CHOICES = [
         ('SALE', 'Sale'),
         ('3DS', '3D Secure'),
@@ -37,19 +39,19 @@ class Payment(models.Model):
         ('success' ,'Success'),
         ('fail','Fail'),
     ]
-    
-    action = models.CharField(max_length=50, choices=ACTION_CHOICES)
-    result = models.CharField(max_length=50, choices=RESULT_CHOICES)
-    status = models.CharField(max_length=50, choices=STATUS_CHOICES, blank=True, null=True)
-    order_id = models.CharField(max_length=100)
-    trans_id = models.CharField(max_length=100)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    action = models.CharField(max_length=50,blank=True, null=True)
+    result = models.CharField(max_length=50,blank=True, null=True)
+    status = models.CharField(max_length=50, blank=True, null=True)
+    order_id = models.CharField(max_length=100,blank=True, null=True)
+    trans_id = models.CharField(max_length=100,blank=True, null=True)
     trans_date = models.DateTimeField(null=True, blank=True)
     descriptor = models.CharField(max_length=255, blank=True, null=True)
     recurring_token = models.CharField(max_length=255, blank=True, null=True)
     schedule_id = models.CharField(max_length=255, blank=True, null=True)
     card_token = models.CharField(max_length=255, blank=True, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    currency = models.CharField(max_length=10)
+    currency = models.CharField(max_length=10,blank=True, null=True)
     decline_reason = models.TextField(blank=True, null=True)
     redirect_url = models.URLField(blank=True, null=True)
     redirect_params = models.JSONField(blank=True, null=True)

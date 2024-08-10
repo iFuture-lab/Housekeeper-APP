@@ -80,25 +80,25 @@ class HousekeeperSerializer(serializers.ModelSerializer):
   
     class Meta:
         model = Housekeeper
-        fields = ['id', 'Name', 'Age', 'nationality', 'isactive', 'is_available','worked_before']
+        fields = '__all__'
 
 class HireRequestSerializer(serializers.ModelSerializer):
     # status = StatusSerializer()
     class Meta:
         model = HireRequest
-        fields = ['id', 'housekeeper', 'requester', 'requester_contact', 'request_date', 'status']
+        fields = '__all__'
 
 class RecruitmentRequestSerializer(serializers.ModelSerializer):
     # status = StatusSerializer()
     class Meta:
         model = RecruitmentRequest
-        fields = ['id', 'housekeeper', 'requester', 'request_contact', 'visa_status', 'requested_date', 'status']
+        fields = '__all__'
 
 class TransferRequestSerializer(serializers.ModelSerializer):
     # status = StatusSerializer()
     class Meta:
         model = TransferRequest
-        fields = ['id', 'housekeeper', 'requester', 'requested_date', 'status']
+        fields = '__all__'
         
 class HousekeeperIDSerializer(serializers.Serializer):
     id = serializers.IntegerField()

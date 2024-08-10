@@ -126,7 +126,7 @@ class RegisterSerializercustomer(serializers.ModelSerializer):
             nationalID=validated_data['nationalID'],
             dateOfBirth=validated_data['dateOfBirth'],
             password=validated_data['password'],
-            # password2=validated_data['password2'],
+            email=validated_data['email'],
         )
         return user
 

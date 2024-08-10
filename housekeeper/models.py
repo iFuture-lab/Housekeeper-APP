@@ -8,6 +8,7 @@ from perice_per_nationality.models import PericePerNationality
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.contrib.auth import get_user_model
+import uuid
 
 User = get_user_model()
 
@@ -15,30 +16,38 @@ User = get_user_model()
 
 
 class ActionLog(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     action_type = models.CharField(max_length=255)
     description = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    
 
     def __str__(self):
         return f"{self.timestamp} - {self.action_type} by {self.user}"
 
 
 class Status(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     Status= models.CharField(max_length=50)
+    is_active = models.BooleanField(default=True)
     
     def __str__(self):
         return self.Status
     
 class Religion(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
     
     
 class EmploymentType(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -46,6 +55,7 @@ class EmploymentType(models.Model):
     
     
 class Housekeeper(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     Name= models.CharField(max_length=50,)
     Age= models.IntegerField()
     gender_CHOICES = {
@@ -79,12 +89,15 @@ class Housekeeper(models.Model):
     
     
 class HireRequest(models.Model):
-    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     readonly_fields = ('pericepernationality_id',)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='hire_requests',)
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
     requester_contact = models.CharField(max_length=100)
-    request_date = models.DateField(default=timezone.now)  # Set default to today's date
+    request_date = models.DateField(default=timezone.now) 
+    requester_firstName = models.CharField(max_length=100,default='DefaultFirstName') 
+    requester_lastName = models.CharField(max_length=100,default='DefaultLastName')   
+    requester_city = models.CharField(max_length=100,null=True) 
     duration=models.IntegerField(default=1)
     pericepernationality_id = models.ForeignKey(PericePerNationality, on_delete=models.CASCADE,null=True)
     total_price =models.FloatField(default=0.0)
@@ -140,6 +153,7 @@ class HireRequest(models.Model):
 
     
 class RecruitmentRequest(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='recruitment_requests')
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
     request_contact = models.CharField(max_length=100)
@@ -154,11 +168,14 @@ class RecruitmentRequest(models.Model):
     
     
 class TransferRequest(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='transfer_requests')
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
     # request_contact = models.CharField(max_length=100)
     requested_date = models.DateField(default=timezone.now) 
-    status= models.ForeignKey(Status, on_delete=models.CASCADE,default='Pending')  # Link to Status model
+    request_contact = models.CharField(max_length=100,default='0123456789')
+    status= models.ForeignKey(Status, on_delete=models.CASCADE,default='Pending') 
+    # Link to Status model
     #status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], default='Pending')
 
     def __str__(self):

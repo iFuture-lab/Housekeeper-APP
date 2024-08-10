@@ -10,7 +10,7 @@ from .models import CustomUser
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken,TokenError
+from rest_framework_simplejwt.tokens import RefreshToken,TokenError,AccessToken
 from django.contrib.auth import authenticate,login
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth.decorators import login_required
@@ -49,11 +49,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from .models import BlacklistedToken
-from .utils import send_otp, verify_otp
+from .utils import send_otp, verify_otp,resend_otp
 
-import random
-import requests
 from django.core.cache import cache
+from .authentication import CustomJWTAuthentication,CustomUserAuthentication
 
 User = get_user_model()
 
@@ -170,40 +169,93 @@ class RegisterView(generics.CreateAPIView):
     )
     
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user_data = serializer.validated_data
-        phone_number = serializer.validated_data.get('phone_number')
+        return super().post(request, *args, **kwargs)
         
-        if send_otp(phone_number):
-            return Response({"message": "OTP sent to phone number. Please verify to complete registration."}, status=status.HTTP_201_CREATED)
+
+
+
+
+# class RegisterView(generics.CreateAPIView):
+#     queryset = CustomUser.objects.all()
+#     permission_classes = (AllowAny,)
+#     serializer_class = RegisterSerializercustomer
+
+#     @swagger_auto_schema(
+#         request_body=RegisterSerializercustomer,
+#         responses={
+#             201: openapi.Response('User created successfully', RegisterSerializercustomer),
+#             400: "Bad Request"
+#         }
+#     )
+    
+#     def post(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         user_data = serializer.validated_data
+#         phone_number = serializer.validated_data.get('phone_number')
         
-        else:
-            return Response({
-                'message': 'Failed to send OTP. Please try again later.'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#         test_mode = request.data.get('test_mode', False)  # Default to False if not provided
+        
+#         success, message = send_otp(phone_number, test_mode=test_mode)
+#         if success:
+#             return Response({
+#                 'message': 'User registration initiated. OTP sent. Please verify the OTP to complete registration.'
+#             }, status=status.HTTP_200_OK)
+#         else:
+#             return Response({
+#                 'message': message
+#             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
      
         
 class VerifyOTPView(APIView):
     permission_classes = (AllowAny,)
+    
     def post(self, request, *args, **kwargs):
-        phone_number = request.data.get('phone_number')
         entered_otp = request.data.get('otp')
+        phone_number = request.data.get('phone_number')  # Get phone number from 
+        test_mode = request.data.get('test_mode', False)
 
-        if verify_otp(phone_number, entered_otp):
+        if phone_number is None:
+            return Response({
+                'message': 'Phone number not found. Please initiate the OTP process again.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if verify_otp(phone_number, entered_otp,test_mode=test_mode):
             # Proceed with registration confirmation logic
             return Response({
                 'message': 'OTP verified successfully. Registration complete.'
             }, status=status.HTTP_200_OK)
+            # Optionally, you can resen
         else:
+            # Optionally, you can resend the OTP if it was wrong or expired
+            success, message = resend_otp(phone_number,test_mode=test_mode)
             return Response({
-                'message': 'Invalid OTP. Please try again.'
+                'message': 'Invalid OTP. A new OTP has been sent. Please try again.'
+            } if success else {
+                'message': message
             }, status=status.HTTP_400_BAD_REQUEST)
 
-    
-    
-class LogoutView(APIView):
+class ResendOtpView(APIView):
     permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        phone_number = request.data.get('phone_number')
+
+        success, message = resend_otp(phone_number)
+        if success:
+            return Response({
+                'message': 'A new OTP has been sent. Please check your phone.'
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                'message': message
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            
+
+class LogoutView(APIView):
+    authentication_classes = [CustomUserAuthentication] 
+    # permission_classes = (IsAuthenticated,)
 
     @swagger_auto_schema(
         request_body=openapi.Schema(
@@ -218,32 +270,58 @@ class LogoutView(APIView):
             400: "Invalid token or no token provided",
         }
     )
+    
     def post(self, request, *args, **kwargs):
-        refresh_token = request.data.get('refresh_token')
-        if not refresh_token:
-            return Response({'detail': 'No refresh token provided'}, status=status.HTTP_400_BAD_REQUEST)
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return Response({'detail': 'No Authorization header provided'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Decode and validate the refresh token
-            token = RefreshToken(refresh_token)
-            user_id = token.get('user_id')
-            
-             # Use the CustomUser model to check if the user exists
+            token_type, access_token = auth_header.split()
+            if token_type != 'Bearer':
+                return Response({'detail': 'Invalid token type'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Decode and validate the access token
+            token = AccessToken(access_token)
+            user_id = str(token['user_id'])
+
+        # Check if the user exists
             if not CustomUser.objects.filter(id=user_id).exists():
                 return Response({'detail': 'Invalid token or user does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Check if the token is already blacklisted
-            if BlacklistedToken.objects.filter(token=refresh_token).exists():
+        # Check if the token is already blacklisted
+            if BlacklistedToken.objects.filter(token=access_token).exists():
                 return Response({'detail': 'Token is already blacklisted'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Add the token to the blacklist
-            BlacklistedToken.objects.create(token=refresh_token)
+        # Add the token to the blacklist
+            BlacklistedToken.objects.create(token=access_token)
             return Response({'detail': 'Logout successful'}, status=status.HTTP_200_OK)
-        except TokenError as e:
-            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
+
+    # def post(self, request, *args, **kwargs):
+    #     refresh_token = request.data.get('refresh_token')
+    #     if not refresh_token:
+    #         return Response({'detail': 'No refresh token provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+    #     try:
+    #         # Decode and validate the refresh token
+    #         token = RefreshToken(refresh_token)
+    #         user_id = str(token['user_id'])  # Ensure user_id is a string
+
+    #         # Check if the user exists
+    #         if not CustomUser.objects.filter(id=user_id).exists():
+    #             return Response({'detail': 'Invalid token or user does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+
+    #         # Check if the token is already blacklisted
+    #         if BlacklistedToken.objects.filter(token=refresh_token).exists():
+    #             return Response({'detail': 'Token is already blacklisted'}, status=status.HTTP_400_BAD_REQUEST)
+
+    #         # Add the token to the blacklist
+    #         BlacklistedToken.objects.create(token=refresh_token)
+    #         return Response({'detail': 'Logout successful'}, status=status.HTTP_200_OK)
+    #     except Exception as e:
+    #         return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
 
     
@@ -262,6 +340,7 @@ class LoginView(generics.GenericAPIView):
                     'phone_number': openapi.Schema(type=openapi.TYPE_STRING),
                     'refresh': openapi.Schema(type=openapi.TYPE_STRING),
                     'access': openapi.Schema(type=openapi.TYPE_STRING),
+                    'user_info':openapi.Schema(type=openapi.TYPE_STRING),
                 }
             )),
             400: "Invalid credentials"
@@ -280,13 +359,53 @@ class LoginView(generics.GenericAPIView):
 
         if user is not None:
             refresh = RefreshToken.for_user(user)
+            access_token = refresh.access_token   
+            access_token.payload.update({
+                'user_id': str(user.id)
+            })
             return Response({
                 'phone_number': user.phone_number,
                 'refresh': str(refresh),
-                'access': str(refresh.access_token),
+                'access': str(access_token),
+                'user_info': {
+                    'id': str(user.id),
+                    'username': user.fullName,
+                    'email': user.email,
+                    'nationalID': user.nationalID,
+                    'dateOfBirth':user.dateOfBirth
+                }
             })
         else:
             return Response({"detail": "Invalid credentials"}, status=400)
+        
+# @authentication_classes([CustomJWTAuthentication])       
+class TokenValidationView(APIView):
+    authentication_classes = [CustomJWTAuthentication]
+    permission_classes = (IsAuthenticated,)
+
+    @swagger_auto_schema(
+        responses={
+            200: "Token is valid",
+            401: "Token is invalid or expired",
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        if user.is_authenticated:
+            # Token is valid, return user info
+            user_info = {
+                'id': user.id,
+                'username': user.fullName,
+                'email': user.email,
+                'phone_number':user.phone_number
+                # Add other user fields you want to include
+            }
+            return Response({
+                "detail": "Token is valid",
+            }, status=200)
+        else:
+            # Token is invalid or expired
+            return Response({"detail": "Token is invalid or expired"}, status=401)
         
         
         
@@ -339,11 +458,15 @@ class LoginViewsystem(generics.GenericAPIView):
         user = serializer.validated_data['user']
 
         refresh = RefreshToken.for_user(user)
+        access_token = refresh.access_token   
+        access_token.payload.update({
+                'user_id': user.id
+            })
         return Response({
             'username':user.username,
             'email': user.email,
             'refresh': str(refresh),
-            'access': str(refresh.access_token),
+            'access': str(access_token),
             'is_staff': user.is_staff,
             'is_superuser': user.is_superuser,
             # 'role':user.role,
