@@ -3,8 +3,8 @@ from django.shortcuts import render
 # Create your views here.
 from rest_framework import generics, filters
 from rest_framework.pagination import PageNumberPagination
-from .models import TempoararyDiscount
-from .serializers import DiscountSerializer
+# from .models import TempoararyDiscount
+# from .serializers import DiscountSerializer
 from django.shortcuts import render
 from rest_framework.permissions import AllowAny
 from drf_yasg.utils import swagger_auto_schema

@@ -65,7 +65,9 @@ urlpatterns = [
     path('api/', include('nationality.urls')), 
     path('api/', include('service_type.urls')), 
     path('api/', include('temporary_discount.urls')), 
-     path('api/', include('payment.urls')), 
+    path('api/', include('perice_per_nationality.urls')),
+    
+    path('api/', include('payment.urls')), 
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'), 
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
