@@ -1,6 +1,10 @@
 from django.db import models
 from perice_per_nationality.models import PericePerNationality
 import uuid
+from nationality.models import Nationallity
+from service_type.models import ServiceType
+from django.utils import timezone
+
 
 # Create your models here.
 class TempoararyDiscount(models.Model):
@@ -15,9 +19,30 @@ class TempoararyDiscount(models.Model):
     def __str__(self):
         return f"Discount {self.id} - {self.discount_percentage}%"
     
+class CustomPackage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    nationality = models.ForeignKey(Nationallity, on_delete=models.CASCADE, related_name='custom_packages')
+    request_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE, related_name='custom_packages')
+    final_price = models.DecimalField(max_digits=10, decimal_places=2)
+    start_date = models.DateTimeField(default=timezone.now)
+    end_date = models.DateTimeField(null=True, blank=True)
+    temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE)
+    is_discount = models.BooleanField(default=False)
+    is_indefinitely = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        # Ensure that end_date is set to None if the package is indefinitely available
+        if self.is_indefinitely:
+            self.end_date = None
+        super().save(*args, **kwargs)
     
 class PromotionCode(models.Model):
-    id = models.BigAutoField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     price_per_nationality = models.ForeignKey(PericePerNationality, on_delete=models.CASCADE)
     code = models.CharField(max_length=255)
     discount_percentage = models.FloatField()

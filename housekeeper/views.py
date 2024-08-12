@@ -18,6 +18,7 @@ from django.db import transaction
 from .filter import StatusFilter
 from rest_framework.permissions import IsAuthenticated
 from .utils import ActionLoggingMixin,send_message
+from uuid import UUID
 
 
 
@@ -79,10 +80,12 @@ class HousekeeperBatchDetailView(ActionLoggingMixin,APIView):
     def get(self, request, *args, **kwargs):
         # Extract the 'ids' parameter from the query parameters
         ids = request.query_params.get('ids', '')
+        
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
                 user=request.user if request.user.is_authenticated else None,
@@ -93,7 +96,7 @@ class HousekeeperBatchDetailView(ActionLoggingMixin,APIView):
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Query the Housekeeper objects with the given IDs
-        housekeepers = Housekeeper.objects.filter(id__in=ids)
+        housekeepers = Housekeeper.objects.filter(id__in=uuid_list)
 
         # Serialize the data
         serializer = HousekeeperSerializer(housekeepers, many=True)
@@ -106,7 +109,7 @@ class HousekeeperBatchDetailView(ActionLoggingMixin,APIView):
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
-                'ids',
+                'uuid_list',
                 openapi.IN_QUERY,
                 description="Comma-separated list of IDs to delete",
                 type=openapi.TYPE_STRING
@@ -120,7 +123,8 @@ class HousekeeperBatchDetailView(ActionLoggingMixin,APIView):
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
                 user=request.user if request.user.is_authenticated else None,
@@ -131,12 +135,12 @@ class HousekeeperBatchDetailView(ActionLoggingMixin,APIView):
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Delete the Housekeeper objects with the given IDs
-        count, _ = Housekeeper.objects.filter(id__in=ids).delete()
+        count, _ = Housekeeper.objects.filter(id__in=uuid_list).delete()
         self.log_action(
             user=request.user if request.user.is_authenticated else None,
             action_type="Deleted",
             model_name="Housekeeper",
-            description=f"Successfully deleted {count} Housekeeper for IDs: {ids}"
+            description=f"Successfully deleted {count} Housekeeper for IDs: {uuid_list}"
         )
 
         # Return the count of deleted objects
@@ -207,7 +211,8 @@ class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
             user=request.user if request.user.is_authenticated else None,
@@ -218,7 +223,7 @@ class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Query the Housekeeper objects with the given IDs
-        housekeepers = HireRequest.objects.filter(id__in=ids)
+        housekeepers = HireRequest.objects.filter(id__in=uuid_list)
 
         # Serialize the data
         serializer = HireRequestSerializer(housekeepers, many=True)
@@ -226,7 +231,7 @@ class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
         user=request.user if request.user.is_authenticated else None,
         action_type="Retrieved",
         model_name="HireReguest",
-        description=f"Successfully retrieved {len(housekeepers)} HireRequests for IDs: {ids}"
+        description=f"Successfully retrieved {len(housekeepers)} HireRequests for IDs: {uuid_list}"
     )
         
         
@@ -251,7 +256,8 @@ class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
             user=request.user if request.user.is_authenticated else None,
@@ -262,12 +268,12 @@ class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Delete the Housekeeper objects with the given IDs
-        count, _ = HireRequest.objects.filter(id__in=ids).delete()
+        count, _ = HireRequest.objects.filter(id__in=uuid_list).delete()
         self.log_action(
         user=request.user if request.user.is_authenticated else None,
         action_type="Deleted",
         model_name="HireRequest",
-        description=f"Successfully deleted {count} HireRequests for IDs: {ids}"
+        description=f"Successfully deleted {count} HireRequests for IDs: {uuid_list}"
     )
         
         # Return the count of deleted objects
@@ -361,6 +367,7 @@ class HousekeeperBatchStatusUpdateView(ActionLoggingMixin,APIView):
     def patch(self, request, *args, **kwargs):
         # Extract the 'ids' and 'status' parameters from the query parameters
         ids = request.query_params.get('ids', '')
+        uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         new_status_name = request.query_params.get('status', '')
         self.log_action(
         user=request.user if request.user.is_authenticated else None,
@@ -371,7 +378,8 @@ class HousekeeperBatchStatusUpdateView(ActionLoggingMixin,APIView):
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
             user=request.user if request.user.is_authenticated else None,
@@ -398,7 +406,7 @@ class HousekeeperBatchStatusUpdateView(ActionLoggingMixin,APIView):
             return Response({"error": f"Status '{new_status_name}' does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
         # Query the Housekeeper objects with the given IDs
-        housekeepers = HireRequest.objects.filter(id__in=ids)
+        housekeepers = HireRequest.objects.filter(id__in=uuid_list)
         if not housekeepers.exists():
             self.log_action(
             user=request.user if request.user.is_authenticated else None,
@@ -468,7 +476,8 @@ class RecruitmentRequestBatchDetailView(ActionLoggingMixin,APIView):
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
             user=request.user if request.user.is_authenticated else None,
@@ -479,7 +488,7 @@ class RecruitmentRequestBatchDetailView(ActionLoggingMixin,APIView):
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Query the Housekeeper objects with the given IDs
-        housekeepers = RecruitmentRequest.objects.filter(id__in=ids)
+        housekeepers = RecruitmentRequest.objects.filter(id__in=uuid_list)
 
         # Serialize the data
         serializer = RecruitmentRequestSerializer(housekeepers, many=True)
@@ -512,7 +521,8 @@ class RecruitmentRequestBatchDetailView(ActionLoggingMixin,APIView):
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
             user=request.user if request.user.is_authenticated else None,
@@ -523,7 +533,7 @@ class RecruitmentRequestBatchDetailView(ActionLoggingMixin,APIView):
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Delete the Housekeeper objects with the given IDs
-        count, _ = RecruitmentRequest.objects.filter(id__in=ids).delete()
+        count, _ = RecruitmentRequest.objects.filter(id__in=uuid_list).delete()
         self.log_action(
         user=request.user if request.user.is_authenticated else None,
         action_type="Deleted",
@@ -634,7 +644,8 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
             user=request.user if request.user.is_authenticated else None,
@@ -660,7 +671,7 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
             return Response({"error": f"Status '{new_status_name}' does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
         # Query the Housekeeper objects with the given IDs
-        Recruitment = RecruitmentRequest.objects.filter(id__in=ids)
+        Recruitment = RecruitmentRequest.objects.filter(id__in=uuid_list)
 
         if not Recruitment.exists():
             self.log_action(
@@ -732,7 +743,8 @@ class TransferRequestBatchDetailView(ActionLoggingMixin,APIView):
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
             user=request.user if request.user.is_authenticated else None,
@@ -743,7 +755,7 @@ class TransferRequestBatchDetailView(ActionLoggingMixin,APIView):
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Query the Housekeeper objects with the given IDs
-        housekeepers = TransferRequest.objects.filter(id__in=ids)
+        housekeepers = TransferRequest.objects.filter(id__in=uuid_list)
 
         # Serialize the data
         serializer = TransferRequestSerializer(housekeepers, many=True)
@@ -777,7 +789,8 @@ class TransferRequestBatchDetailView(ActionLoggingMixin,APIView):
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
                 user=request.user if request.user.is_authenticated else None,
@@ -789,7 +802,7 @@ class TransferRequestBatchDetailView(ActionLoggingMixin,APIView):
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Delete the Housekeeper objects with the given IDs
-        count, _ = TransferRequest.objects.filter(id__in=ids).delete()
+        count, _ = TransferRequest.objects.filter(id__in=uuid_list).delete()
         
         self.log_action(
         user=request.user if request.user.is_authenticated else None,
@@ -899,7 +912,8 @@ class TransferBatchStatusUpdateView(ActionLoggingMixin,APIView):
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
                 user=request.user if request.user.is_authenticated else None,
@@ -925,7 +939,7 @@ class TransferBatchStatusUpdateView(ActionLoggingMixin,APIView):
             return Response({"error": f"Status '{new_status_name}' does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
         # Query the Housekeeper objects with the given IDs
-        Transfer = TransferRequest.objects.filter(id__in=ids)
+        Transfer = TransferRequest.objects.filter(id__in=uuid_list)
 
         if not Transfer.exists():
             self.log_action(

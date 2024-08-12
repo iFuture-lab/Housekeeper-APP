@@ -65,6 +65,7 @@ class CustomUser(AbstractBaseUser):
     nationalID=  models.CharField(max_length=100,default="1234567890o")
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    is_confirmed= models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
      
     USERNAME_FIELD = 'fullName'

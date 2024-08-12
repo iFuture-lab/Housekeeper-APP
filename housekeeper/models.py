@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.contrib.auth import get_user_model
 import uuid
+from temporary_discount.models import TempoararyDiscount
 
 User = get_user_model()
 
@@ -101,7 +102,9 @@ class HireRequest(models.Model):
     duration=models.IntegerField(default=1)
     pericepernationality_id = models.ForeignKey(PericePerNationality, on_delete=models.CASCADE,null=True)
     total_price =models.FloatField(default=0.0)
-    status= models.ForeignKey(Status, on_delete=models.CASCADE)  # Link to Status model
+    status= models.ForeignKey(Status, on_delete=models.CASCADE)
+    temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE)
+    is_discount = models.BooleanField(default=False)
     
     def save(self, *args, **kwargs):
         # Automatically set pericepernationalit_id based on housekeeper's details
@@ -121,8 +124,10 @@ class HireRequest(models.Model):
             
                 
             except PericePerNationality.DoesNotExist:
-            # Raise a validation error to be caught and displayed
-                raise ValidationError('No matching PericePerNationality found. Please ensure the PericePerNationality is set correctly.')
+                self.total_price=0.0
+                
+            # # Raise a validation error to be caught and displayed
+            #     raise ValidationError('No matching PericePerNationality found. Please ensure the PericePerNationality is set correctly.')
 
    
                
@@ -162,6 +167,8 @@ class RecruitmentRequest(models.Model):
     requested_date = models.DateField(default=timezone.now) 
     #status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], default='Pending')
     status= models.ForeignKey(Status, on_delete=models.CASCADE,default='Pending')  # Link to Status model
+    temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE)
+    is_discount = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Recruitment Request by {self.requester.fullName} for Housekeeper {self.housekeeper.Name}"
@@ -171,12 +178,15 @@ class TransferRequest(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='transfer_requests')
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
-    # request_contact = models.CharField(max_length=100)
     requested_date = models.DateField(default=timezone.now) 
     request_contact = models.CharField(max_length=100,default='0123456789')
     status= models.ForeignKey(Status, on_delete=models.CASCADE,default='Pending') 
-    # Link to Status model
-    #status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], default='Pending')
+    requester_firstName = models.CharField(max_length=100,default='DefaultFirstName') 
+    requester_lastName = models.CharField(max_length=100,default='DefaultLastName')   
+    requester_city = models.CharField(max_length=100,null=True) 
+    temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE)
+    is_discount = models.BooleanField(default=False)
+    
 
     def __str__(self):
         return f"Transfer Request by {self.requester.fullName} for Housekeeper {self.housekeeper.Name}"

@@ -23,7 +23,7 @@ from .employment_type_view import EmploymentTypeCreateView, EmploymentTypeBatchD
 
 urlpatterns = [
     path('housekeepers/', HousekeeperListCreateView.as_view(), name='housekeeper-list-create'),
-    path('housekeepers/<int:pk>/', HousekeeperDetailView.as_view(), name='housekeeper-detail'),
+    path('housekeepers/<uuid:pk>/', HousekeeperDetailView.as_view(), name='housekeeper-detail'),
     path('housekeeper/ids/', HousekeeperIDsView.as_view(), name='housekeeper-ids'),
     path('housekeepers/batch/', HousekeeperBatchDetailView.as_view(), name='housekeeper-batch-detail'),
     #path('housekeepers/DeleteMany/', HousekeeperBatchDeleteView.as_view(), name='housekeeper-delete-detail'),
@@ -31,7 +31,7 @@ urlpatterns = [
     
     
     path('hire-requests/', HireRequestListCreateView.as_view(), name='hire-request-list-create'),
-    path('hire-requests/<int:pk>/', HireRequestDetailView.as_view(), name='hire-request-detail'),
+    path('hire-requests/<uuid:pk>/', HireRequestDetailView.as_view(), name='hire-request-detail'),
     path('hire-requests/batch/', HireHousekeeperBatchDetailView.as_view(), name='hire-request-batch-detail'),
     #path('hire-requests/batch/', HireHousekeeperBatchDetailView.as_view(), name='hire-request-batch-detail'),
     path('hire-requests/batch/status', HousekeeperBatchStatusUpdateView.as_view(), name='hire-request-batch-status'),
@@ -39,28 +39,28 @@ urlpatterns = [
     
 
     path('recruitment-requests/', RecruitmentRequestListCreateView.as_view(), name='recruitment-request-list-create'),
-    path('recruitment-requests/<int:pk>/', RecruitmentRequestDetailView.as_view(), name='recruitment-request-detail'),
+    path('recruitment-requests/<uuid:pk>/', RecruitmentRequestDetailView.as_view(), name='recruitment-request-detail'),
     path('recruitment-requests/batch/', RecruitmentRequestBatchDetailView.as_view(), name='recruitment-request-batch-detail'),
     path('recruitment-requests/batch/status', RecruitmentBatchStatusUpdateView.as_view(), name='recruitment-request-batch-detail'), 
     path('recruitment-requests/status/filter',RecruitmentListView.as_view(), name='recruitment-request-batch-status-filter'),   
 
     path('transfer-requests/', TransferRequestListCreateView.as_view(), name='transfer-request-list-create'),
-    path('transfer-requests/<int:pk>/', TransferRequestDetailView.as_view(), name='transfer-request-detail'),
+    path('transfer-requests/<uuid:pk>/', TransferRequestDetailView.as_view(), name='transfer-request-detail'),
     path('transfer-requests/batch/', TransferRequestBatchDetailView.as_view(), name='transfer-request-batch-detail'),
     path('transfer-requests/batch/status', TransferBatchStatusUpdateView.as_view(), name='transfer-request-batch-detail'), 
     path('transfer-requests/status/filter',TransferRequestListView.as_view(), name='transfer-request-batch-status-filter'),
     
     
     path('status/',StatusCreateView.as_view(), name='status-create'),
-    path('status/<int:pk>/',StatusDetailView.as_view(), name='status-detail'),
+    path('status/<uuid:pk>/',StatusDetailView.as_view(), name='status-detail'),
     path('status/batch/',StatusBatchDetailView.as_view(), name='status-batch'),
     
     path('religion/',ReligionCreateView.as_view(), name='religion-create'),
-    path('religion/<int:pk>/',ReligionDetailView.as_view(), name='religion-detail'),
+    path('religion/<uuid:pk>/',ReligionDetailView.as_view(), name='religion-detail'),
     path('religion/batch/',ReligionBatchDetailView.as_view(), name='religion-batch'),
     
     path('employement-type/',EmploymentTypeCreateView.as_view(), name='employement-type-create'),
-    path('employement-type/<int:pk>/',EmploymentTypeDetailView.as_view(), name='employement-type-detail'),
+    path('employement-type/<uuid:pk>/',EmploymentTypeDetailView.as_view(), name='employement-type-detail'),
     path('employement-type/batch/',EmploymentTypeBatchDetailView.as_view(), name='employement-type-batch'),
     # path('action-log', include(router.urls)),
     

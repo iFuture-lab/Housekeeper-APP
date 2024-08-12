@@ -64,6 +64,7 @@ urlpatterns = [
     path('api/', include('housekeeper.urls')), 
     path('api/', include('nationality.urls')), 
     path('api/', include('service_type.urls')), 
+    path('api/', include('temporary_discount.urls')), 
      path('api/', include('payment.urls')), 
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'), 

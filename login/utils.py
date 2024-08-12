@@ -61,7 +61,7 @@ def verify_otp(phone_number, entered_otp, test_mode=False):
     
     # Handle OTP verification based on the mode
     if test_mode:
-        if entered_otp == '111111':  # Default OTP for testing
+        if entered_otp == '0000':  # Default OTP for testing
             cache.delete(otp_key)  # Remove OTP from cache after use
             cache.delete(f'otp_timestamp_{phone_number}')  # Remove timestamp from cache
             return True

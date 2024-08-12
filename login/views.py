@@ -155,26 +155,6 @@ def home_view(request):
 
 
 
-class RegisterView(generics.CreateAPIView):
-    queryset = CustomUser.objects.all()
-    permission_classes = (AllowAny,)
-    serializer_class = RegisterSerializercustomer
-
-    @swagger_auto_schema(
-        request_body=RegisterSerializercustomer,
-        responses={
-            201: openapi.Response('User created successfully', RegisterSerializercustomer),
-            400: "Bad Request"
-        }
-    )
-    
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
-        
-
-
-
-
 # class RegisterView(generics.CreateAPIView):
 #     queryset = CustomUser.objects.all()
 #     permission_classes = (AllowAny,)
@@ -189,22 +169,41 @@ class RegisterView(generics.CreateAPIView):
 #     )
     
 #     def post(self, request, *args, **kwargs):
-#         serializer = self.get_serializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         user_data = serializer.validated_data
-#         phone_number = serializer.validated_data.get('phone_number')
+#         return super().post(request, *args, **kwargs)
         
-#         test_mode = request.data.get('test_mode', False)  # Default to False if not provided
         
-#         success, message = send_otp(phone_number, test_mode=test_mode)
-#         if success:
-#             return Response({
-#                 'message': 'User registration initiated. OTP sent. Please verify the OTP to complete registration.'
-#             }, status=status.HTTP_200_OK)
-#         else:
-#             return Response({
-#                 'message': message
-#             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+class RegisterView(generics.CreateAPIView):
+    queryset = CustomUser.objects.all()
+    permission_classes = (AllowAny,)
+    serializer_class = RegisterSerializercustomer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        user = serializer.save(is_confirmed=False)  # Create user but keep inactive
+        phone_number = user.phone_number
+        
+        test_mode = request.data.get('test_mode', False)  # Default to False if not provided
+        success, otp_or_message = send_otp(phone_number, test_mode=test_mode)
+        
+        if success:
+            # Save OTP and phone number in OTPVerification model
+            return Response({
+                'message': 'User registered successfully. OTP sent. Please verify the OTP to activate your account.',
+                'user_id': user.id
+            }, status=status.HTTP_201_CREATED)
+        else:
+            user.delete()  # Delete the user if OTP sending failed
+            return Response({
+                'message': 'can not send otp'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+    
      
         
 class VerifyOTPView(APIView):
@@ -221,6 +220,9 @@ class VerifyOTPView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         if verify_otp(phone_number, entered_otp,test_mode=test_mode):
+            user = CustomUser.objects.get(phone_number=phone_number)
+            user.is_confirmed = True
+            user.save()
             # Proceed with registration confirmation logic
             return Response({
                 'message': 'OTP verified successfully. Registration complete.'
