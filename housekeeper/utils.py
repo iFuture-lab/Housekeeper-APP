@@ -39,8 +39,6 @@ def send_message(phone_number, request_details, test_mode=False):
         - Housekeeper: {request_details['housekeeper']}
         - Requester Contact: {request_details['requester_contact']}
         - Request Date: {request_details['request_date']}
-        - Duration: {request_details['duration']}
-        - Price: {request_details['total_price']}
         - Status: {request_details['status']}
         """
         # Return success immediately in test mode
@@ -51,8 +49,6 @@ def send_message(phone_number, request_details, test_mode=False):
     - Housekeeper: {request_details['housekeeper']}
     - Requester Contact: {request_details['requester_contact']}
     - Request Date: {request_details['request_date']}
-    - Duration: {request_details['duration']}
-    - Price: {request_details['total_price']}
     - Status: {request_details['status']}
     """
     

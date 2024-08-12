@@ -4,7 +4,8 @@ from login.models import CustomUser
 from nationality.views import NationalitySerializer
 from nationality.models import Nationallity
 from .models import ActionLog
-
+from django.utils import timezone
+from decimal import Decimal
 
 class ActionLogSerializer(serializers.ModelSerializer):
     class Meta:
@@ -83,22 +84,122 @@ class HousekeeperSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class HireRequestSerializer(serializers.ModelSerializer):
-    # status = StatusSerializer()
+    old_price = serializers.SerializerMethodField()
+    new_price = serializers.SerializerMethodField()
+    has_discount = serializers.SerializerMethodField()
+    
     class Meta:
         model = HireRequest
         fields = '__all__'
+        
+    def get_old_price(self, obj):
+        # Return the original price without any discounts
+        return float(obj.total_price)
+
+    def get_new_price(self, obj):
+        # Calculate the discounted price if applicable
+        if obj.temporary_discount and obj.temporary_discount.is_active:
+            now = timezone.now()
+            if obj.temporary_discount.start_date <= now <= obj.temporary_discount.end_date:
+                discount = Decimal(obj.temporary_discount.discount_percentage)  
+                total_price = Decimal(obj.total_price)
+                discount_amount = (total_price * discount) / Decimal(100) 
+                total_price= float(total_price - discount_amount) 
+                return total_price
+        return float(Decimal(obj.total_price))  
+            
+
+    def get_has_discount(self, obj):
+        # Determine if a discount is active
+        if obj.temporary_discount and obj.temporary_discount.is_active:
+            print("""""""""""",obj.temporary_discount)
+            now = timezone.now()
+            if obj.temporary_discount.start_date <= now <= obj.temporary_discount.end_date:
+                return True
+        return False
+    
+    
+    # def validate(self, data):
+    #     # Automatically set is_discount to True if temporary_discount is provided
+    #     if data.get('temporary_discount') is not None:
+    #         data['is_discount'] = True
+    #     else:
+    #         data['is_discount'] = False
+    #     return data
+        
+    
 
 class RecruitmentRequestSerializer(serializers.ModelSerializer):
     # status = StatusSerializer()
+    old_price = serializers.SerializerMethodField()
+    new_price = serializers.SerializerMethodField()
+    has_discount = serializers.SerializerMethodField()
     class Meta:
         model = RecruitmentRequest
         fields = '__all__'
+        
+    def get_old_price(self, obj):
+        # Return the original price without any discounts
+        return float(obj.total_price)
+
+    def get_new_price(self, obj):
+        # Calculate the discounted price if applicable
+        if obj.temporary_discount and obj.temporary_discount.is_active:
+            now = timezone.now()
+            if obj.temporary_discount.start_date <= now <= obj.temporary_discount.end_date:
+                discount = Decimal(obj.temporary_discount.discount_percentage)  
+                total_price = Decimal(obj.total_price)
+                discount_amount = (total_price * discount) / Decimal(100) 
+                total_price= float(total_price - discount_amount) 
+                return total_price
+        return float(Decimal(obj.total_price))  
+            
+
+    def get_has_discount(self, obj):
+        # Determine if a discount is active
+        if obj.temporary_discount and obj.temporary_discount.is_active:
+            print("""""""""""",obj.temporary_discount)
+            now = timezone.now()
+            if obj.temporary_discount.start_date <= now <= obj.temporary_discount.end_date:
+                return True
+        return False
+        
+    
 
 class TransferRequestSerializer(serializers.ModelSerializer):
+    old_price = serializers.SerializerMethodField()
+    new_price = serializers.SerializerMethodField()
+    has_discount = serializers.SerializerMethodField()
     # status = StatusSerializer()
     class Meta:
         model = TransferRequest
         fields = '__all__'
+        
+    def get_old_price(self, obj):
+        # Return the original price without any discounts
+        return float(obj.total_price)
+
+    def get_new_price(self, obj):
+        # Calculate the discounted price if applicable
+        if obj.temporary_discount and obj.temporary_discount.is_active:
+            now = timezone.now()
+            if obj.temporary_discount.start_date <= now <= obj.temporary_discount.end_date:
+                discount = Decimal(obj.temporary_discount.discount_percentage)  
+                total_price = Decimal(obj.total_price)
+                discount_amount = (total_price * discount) / Decimal(100) 
+                total_price= float(total_price - discount_amount) 
+                return total_price
+        return float(Decimal(obj.total_price))  
+            
+
+    def get_has_discount(self, obj):
+        # Determine if a discount is active
+        if obj.temporary_discount and obj.temporary_discount.is_active:
+            print("""""""""""",obj.temporary_discount)
+            now = timezone.now()
+            if obj.temporary_discount.start_date <= now <= obj.temporary_discount.end_date:
+                return True
+        return False
         
 class HousekeeperIDSerializer(serializers.Serializer):
     id = serializers.IntegerField()

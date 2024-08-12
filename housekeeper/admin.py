@@ -18,6 +18,11 @@ admin.site.register(EmploymentType)
 @admin.register(ActionLog)
 class ActionLogAdmin(admin.ModelAdmin):
     list_display = ('user', 'action_type', 'description', 'timestamp')
+    
+    
+
+class HireRequestAdmin(admin.ModelAdmin):
+    readonly_fields = ('service_type',)
 
 
 
