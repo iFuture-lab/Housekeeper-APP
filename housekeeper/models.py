@@ -70,7 +70,10 @@ class Housekeeper(models.Model):
     is_available = models.BooleanField(default=True)  # Ensure parentheses are used
     worked_before = models.BooleanField(default=True)
     employment_type = models.ForeignKey(EmploymentType,on_delete=models.CASCADE,null=True)
-    request_type= models.ForeignKey(ServiceType, on_delete=models.CASCADE,null=True,)
+    experience_years = models.IntegerField()  
+    languages_spoken = models.JSONField() 
+    rating = models.FloatField() 
+    request_types = models.ManyToManyField('service_type.ServiceType',) 
     
 
     
