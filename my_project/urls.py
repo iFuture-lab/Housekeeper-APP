@@ -43,9 +43,8 @@ schema_view  = get_schema_view(
     openapi.Info(
         title="Your API",
         default_version='v1',
-        description="APIs for user login",
-        #terms_of_service="http://localhost:8000/api/login/",
-        #terms_of_service="https://www.example.com/terms/",  # Placeholder URL
+        description="APIs for user login",   
+        terms_of_service="https://www.example.com/terms/",  # Placeholder URL
         contact=openapi.Contact(email="jenansol@hotmail.com"),
         license=openapi.License(name="BSD License"),
     ),
