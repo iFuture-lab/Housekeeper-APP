@@ -335,7 +335,54 @@ class HousekeeperBatchDetailView(ActionLoggingMixin,APIView):
 class HousekeeperListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
     queryset = Housekeeper.objects.all()
     serializer_class = HousekeeperSerializer
-    permission_classes = [AllowAny] 
+    permission_classes = [AllowAny]
+    
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'sort_by',
+                openapi.IN_QUERY,
+                description="Field to sort the results by",
+                type=openapi.TYPE_STRING,
+                default='Name',
+                required=False
+            ),
+            openapi.Parameter(
+                'nationality',
+                openapi.IN_QUERY,
+                description="Filter housekeepers by nationality",
+                type=openapi.TYPE_ARRAY,
+                items=openapi.Items(type=openapi.TYPE_STRING),
+                required=False
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="List of housekeepers",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'name': openapi.Schema(type=openapi.TYPE_STRING),
+                            'age': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'gender': openapi.Schema(type=openapi.TYPE_STRING),
+                            'nationality': openapi.Schema(type=openapi.TYPE_STRING),
+                            'religion': openapi.Schema(type=openapi.TYPE_STRING),
+                            'isactive': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            'is_available': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            'worked_before': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            'worked_before_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
+                            'employment_type': openapi.Schema(type=openapi.TYPE_STRING),
+                            'monthly_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
+                            'pricePerMonth': openapi.Schema(type=openapi.TYPE_NUMBER),
+                        }
+                    )
+                )
+            )
+        }
+    ) 
     
     def get_queryset(self):
         queryset = Housekeeper.objects.all()
