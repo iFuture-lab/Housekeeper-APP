@@ -1,11 +1,12 @@
 from rest_framework import serializers
-from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferRequest,Status
+from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferRequest,Status,HousekeeperRequestType
 from login.models import CustomUser
 from nationality.views import NationalitySerializer
 from nationality.models import Nationallity
 from .models import ActionLog
 from django.utils import timezone
 from decimal import Decimal
+from service_type.models import ServiceType
 
 class ActionLogSerializer(serializers.ModelSerializer):
     class Meta:
@@ -78,10 +79,42 @@ class DummyRecruitmentRequestSerializer(serializers.ModelSerializer):
 
 class HousekeeperSerializer(serializers.ModelSerializer):
     # nationality = serializers.PrimaryKeyRelatedField(queryset=Nationallity.objects.all())
+   
+    request_types = serializers.PrimaryKeyRelatedField(
+        queryset=ServiceType.objects.all(),
+        many=True
+    )
   
     class Meta:
         model = Housekeeper
         fields = '__all__'
+        
+        
+    
+
+        
+        
+    def create(self, validated_data):
+        request_type_ids = validated_data.pop('request_types')
+        housekeeper = Housekeeper.objects.create(**validated_data)
+        housekeeper.request_types.set(request_type_ids)
+        return housekeeper
+    
+    
+    def update(self, instance, validated_data):
+        request_type_ids = validated_data.pop('request_types', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if request_type_ids is not None:
+            instance.request_types.set(request_type_ids)
+        return instance
+
+    
+       
+        
+        
+    
 
 class HireRequestSerializer(serializers.ModelSerializer):
     old_price = serializers.SerializerMethodField()

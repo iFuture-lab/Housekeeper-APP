@@ -77,4 +77,4 @@ def verify_otp(phone_number, entered_otp, test_mode=False):
 
 
 def resend_otp(phone_number,test_mode=False):
-    return send_otp(phone_number, force_resend=True)
+    return send_otp(phone_number, force_resend=True,test_mode=test_mode)

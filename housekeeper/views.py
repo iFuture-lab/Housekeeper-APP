@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
-from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferRequest
+from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferRequest,HousekeeperRequestType
 from .serializer import HousekeeperSerializer, HireRequestSerializer, RecruitmentRequestSerializer, TransferRequestSerializer
 from .serializer import DummyHousekeeperSerializer,HousekeeperIDSerializer,DummyHireHousekeeperSerializer,DummyRecruitmentRequestSerializer,DummyTransferRequestSerializer,DeleteHousekeeper,UpdateHireRequest
 from.models import Status
@@ -46,19 +46,83 @@ class TransferRequestListView(generics.ListAPIView):
     serializer_class = TransferRequestSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = StatusFilter
+    
+    
+    
+####################################################new API ##############################################################################
+class HousekeeperListView(APIView):
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        request_type_name = request.query_params.get('request_type')
+        employment_type_name = request.query_params.get('employment_type')
+        nationality_name = request.query_params.get('nationality_type')
+
+        housekeepers = Housekeeper.objects.all()
+
+        if request_type_name:
+            request_types = request_type_name.split(',')
+            housekeeper_ids = HousekeeperRequestType.objects.filter(
+                request_type__name__in=request_types
+            ).values_list('housekeeper_id', flat=True).distinct()
+            
+            housekeepers = housekeepers.filter(id__in=housekeeper_ids)
+
+        if employment_type_name:
+            housekeepers = housekeepers.filter(
+                employment_type__name=employment_type_name
+            )
+
+        if nationality_name:
+            housekeepers = housekeepers.filter(
+                nationality__Nationality=nationality_name
+            )
+
+        serializer = HousekeeperSerializer(housekeepers.distinct(), many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+###############################################
+
+class HousekeeperFilterView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request, *args, **kwargs):
+        religion = request.GET.get('religion')
+        age = request.GET.get('age')
+        nationality = request.GET.get('nationality')
+
+        # Start with all available housekeepers
+        housekeepers = Housekeeper.objects.filter(is_available=True)
+
+        # Apply filters if provided
+        if religion:
+            housekeepers = housekeepers.filter(religion__name=religion)
+        
+        if age:
+            try:
+                age = int(age)
+                housekeepers = housekeepers.filter(Age=age)
+            except ValueError:
+                return Response({"error": "Invalid age format"}, status=400)
+        
+        if nationality:
+            housekeepers = housekeepers.filter(nationality__Nationality=nationality)
+
+        serializer = HousekeeperSerializer(housekeepers, many=True)
+        return Response(serializer.data)
+        
 
 
 
 
 
-###################################filter for nationallity, Age, is_avalibale #################################
+###################################filter for nationallity, Age, is_avalibale #############################################################
 
 class AvailableHousekeeper(generics.ListAPIView):
     permission_classes = [AllowAny]
     queryset = Housekeeper.objects.all()
     serializer_class = HousekeeperSerializer
     filter_backends = [DjangoFilterBackend]
-    #filterset_fields = ['is_available', 'nationality','isactive','Age']
     filterset_class = HousekeeperFilter
     
     
@@ -152,6 +216,21 @@ class HousekeeperListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
     queryset = Housekeeper.objects.all()
     serializer_class = HousekeeperSerializer
     permission_classes = [AllowAny] 
+    
+    def get_queryset(self):
+        queryset = Housekeeper.objects.all()
+        sort_by = self.request.GET.get('sort_by', 'Name')
+        nationalities = self.request.GET.getlist('nationality')
+
+        if nationalities:
+            queryset = queryset.filter(nationality__Nationality__in=nationalities)
+            
+        if sort_by:
+            queryset = queryset.order_by(sort_by)
+
+        return queryset
+
+    
     
     
     def get(self, request, *args, **kwargs):

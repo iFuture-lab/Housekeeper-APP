@@ -19,6 +19,7 @@ class PericePerNationality(models.Model):
     new_housekeeper_salary = models.FloatField(null=True)
     fees=models.FloatField(default=0.0)
     is_active = models.BooleanField(default=True)
+    description=models.TextField()
     
     
     

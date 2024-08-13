@@ -73,12 +73,24 @@ class Housekeeper(models.Model):
     experience_years = models.IntegerField()  
     languages_spoken = models.JSONField() 
     rating = models.FloatField() 
-    request_types = models.ManyToManyField('service_type.ServiceType',) 
+    request_types= models.ManyToManyField(ServiceType, through='HousekeeperRequestType',related_name='housekeeper')
     
 
     
     def __str__(self):
         return self.Name
+    
+    
+    
+class HousekeeperRequestType(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE)
+    request_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE)
+    class Meta:
+        unique_together = ('housekeeper', 'request_type')  # Ensure unique pairs
+
+    def __str__(self):
+        return f"{self.housekeeper.Name} - {self.request_type.name}"
     
     
 
@@ -258,6 +270,7 @@ class TransferRequest(models.Model):
     def __str__(self):
         return f"Transfer Request by {self.requester.fullName} for Housekeeper {self.housekeeper.Name}"
     
+
     
     
 

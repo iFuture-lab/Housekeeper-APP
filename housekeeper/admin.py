@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import ActionLog
-from .models import Housekeeper,HireRequest,RecruitmentRequest,TransferRequest,Status,Religion,EmploymentType
+from .models import Housekeeper,HireRequest,RecruitmentRequest,TransferRequest,Status,Religion,EmploymentType,HousekeeperRequestType
 
 
 
@@ -13,6 +13,7 @@ admin.site.register(TransferRequest)
 admin.site.register(Status)
 admin.site.register(Religion)
 admin.site.register(EmploymentType)
+admin.site.register(HousekeeperRequestType)
 
 
 @admin.register(ActionLog)

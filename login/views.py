@@ -176,6 +176,21 @@ class RegisterView(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializercustomer
+    
+    
+    @swagger_auto_schema(
+        operation_description="Register a new user and send an OTP for phone number verification.",
+        responses={
+            201: openapi.Response("User registered successfully. OTP sent. Please verify the OTP to activate your account.", openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'message': openapi.Schema(type=openapi.TYPE_STRING),
+                    'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                }
+            )),
+            500: openapi.Response("Cannot send OTP.")
+        }
+    )
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -209,41 +224,99 @@ class RegisterView(generics.CreateAPIView):
 class VerifyOTPView(APIView):
     permission_classes = (AllowAny,)
     
+    @swagger_auto_schema(
+        operation_description="Verify the OTP sent to the user's phone number and complete the registration.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'otp': openapi.Schema(type=openapi.TYPE_STRING),
+                'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                'test_mode': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Set to true to simulate verification without actual OTP validation'),
+            },
+            required=['otp', 'user_id']
+        ),
+        responses={
+            200: openapi.Response("OTP verified successfully. Registration complete."),
+            400: openapi.Response("Invalid OTP. A new OTP has been sent. Please try again."),
+            404: openapi.Response("User not found. Please provide a valid user ID.")
+        }
+    )
+    
     def post(self, request, *args, **kwargs):
         entered_otp = request.data.get('otp')
-        phone_number = request.data.get('phone_number')  # Get phone number from 
+        #phone_number = request.data.get('phone_number') 
+        user_id = request.data.get('user_id')
         test_mode = request.data.get('test_mode', False)
 
-        if phone_number is None:
+        if user_id is None:
             return Response({
-                'message': 'Phone number not found. Please initiate the OTP process again.'
+                'message': 'User ID not found. Please initiate the OTP process again.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        if verify_otp(phone_number, entered_otp,test_mode=test_mode):
-            user = CustomUser.objects.get(phone_number=phone_number)
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response({
+                'message': 'User not found. Please initiate the OTP process again.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        phone_number = user.phone_number  # Use phone number from user object
+
+        if verify_otp(phone_number, entered_otp, test_mode=test_mode):
             user.is_confirmed = True
             user.save()
-            # Proceed with registration confirmation logic
             return Response({
                 'message': 'OTP verified successfully. Registration complete.'
             }, status=status.HTTP_200_OK)
-            # Optionally, you can resen
         else:
             # Optionally, you can resend the OTP if it was wrong or expired
-            success, message = resend_otp(phone_number,test_mode=test_mode)
+            success, message = resend_otp(phone_number, test_mode=test_mode)
             return Response({
                 'message': 'Invalid OTP. A new OTP has been sent. Please try again.'
             } if success else {
                 'message': message
             }, status=status.HTTP_400_BAD_REQUEST)
-
+            
 class ResendOtpView(APIView):
     permission_classes = (AllowAny,)
+    
+    @swagger_auto_schema(
+        operation_description="Resend the OTP to the user's phone number.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'user_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='The ID of the user to resend OTP to'),
+                'test_mode': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Set to true to simulate OTP sending without actually sending it'),
+            },
+            required=['user_id']
+        ),
+        responses={
+            200: openapi.Response("A new OTP has been sent. Please check your phone."),
+            400: openapi.Response("User ID not found. Please provide a valid user ID."),
+            404: openapi.Response("User not found. Please provide a valid user ID."),
+            500: openapi.Response("Failed to send OTP.")
+        }
+    )
 
     def post(self, request, *args, **kwargs):
-        phone_number = request.data.get('phone_number')
+        user_id = request.data.get('user_id')  # Get user ID from request
+        test_mode = request.data.get('test_mode', False)  # Default to False if not provided
 
-        success, message = resend_otp(phone_number)
+        if user_id is None:
+            return Response({
+                'message': 'User ID not found. Please provide a valid user ID.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response({
+                'message': 'User not found. Please provide a valid user ID.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        phone_number = user.phone_number  # Use phone number from user object
+
+        success, message = resend_otp(phone_number, test_mode=test_mode)
         if success:
             return Response({
                 'message': 'A new OTP has been sent. Please check your phone.'
@@ -252,7 +325,7 @@ class ResendOtpView(APIView):
             return Response({
                 'message': message
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
+
             
 
 class LogoutView(APIView):

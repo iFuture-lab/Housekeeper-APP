@@ -48,6 +48,10 @@ class PackageCreateView(generics.ListCreateAPIView):
     serializer_class = CustomPackageSerializer
     permission_classes = [AllowAny] 
     
+    def perform_create(self, serializer):
+        # The serializer will handle the creation of the CustomPackage
+        serializer.save()
+    
 
 
 

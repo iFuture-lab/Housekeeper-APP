@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import TempoararyDiscount,PromotionCode,CustomPackage
 from django.utils import timezone
 from decimal import Decimal
+from nationality.models import Nationallity
 
         
 
@@ -23,6 +24,8 @@ class CustomPackageSerializer(serializers.ModelSerializer):
     old_price = serializers.SerializerMethodField()
     new_price = serializers.SerializerMethodField()
     has_discount = serializers.SerializerMethodField()
+    
+    nationallities = serializers.PrimaryKeyRelatedField(queryset=Nationallity.objects.all(), many=True)
 
     class Meta:
         model = CustomPackage
@@ -62,3 +65,20 @@ class CustomPackageSerializer(serializers.ModelSerializer):
         else:
             data['is_discount'] = False
         return data
+    
+    def create(self, validated_data):
+        nationallity_ids = validated_data.pop('nationallities')
+        custom_package = CustomPackage.objects.create(**validated_data)
+        custom_package.nationallities.set(nationallity_ids)  # Add nationalities to the custom_package
+        return custom_package
+    
+    
+
+    def update(self, instance, validated_data):
+        nationallity_ids = validated_data.pop('nationallities', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if nationallity_ids is not None:
+            instance.nationalities.set(nationallity_ids)
+        return instance

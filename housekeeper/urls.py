@@ -9,7 +9,7 @@ from .views import (
     TransferRequestListCreateView, TransferRequestDetailView
    
 )
-from .views import HousekeeperIDsView,AvailableHousekeeper,TransferBatchStatusUpdateView,RecruitmentBatchStatusUpdateView,HireRequestListView,TransferRequestListView
+from .views import HousekeeperIDsView,AvailableHousekeeper,TransferBatchStatusUpdateView,RecruitmentBatchStatusUpdateView,HireRequestListView,TransferRequestListView,HousekeeperListView,HousekeeperFilterView
 from.views import HousekeeperBatchDetailView,HireHousekeeperBatchDetailView,RecruitmentRequestBatchDetailView,TransferRequestBatchDetailView,HousekeeperBatchStatusUpdateView,RecruitmentListView
 from .status_view import StatusCreateView,StatusDetailView,StatusBatchDetailView
 from .religion_view import ReligionCreateView, ReligionBatchDetailView,ReligionDetailView
@@ -28,6 +28,9 @@ urlpatterns = [
     path('housekeepers/batch/', HousekeeperBatchDetailView.as_view(), name='housekeeper-batch-detail'),
     #path('housekeepers/DeleteMany/', HousekeeperBatchDeleteView.as_view(), name='housekeeper-delete-detail'),
     path('housekeepers/search/', AvailableHousekeeper.as_view(), name='available-housekeeper-list'),
+    path('housekeepers/get-housekeeper_nationality_request_type_employment_type/',HousekeeperListView.as_view(), name='filter-housekeeper'),
+    path('housekeepers/filter/', HousekeeperFilterView.as_view(), name='housekeeper-filter'),
+    
     
     
     path('hire-requests/', HireRequestListCreateView.as_view(), name='hire-request-list-create'),
