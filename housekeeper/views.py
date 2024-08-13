@@ -52,6 +52,66 @@ class TransferRequestListView(generics.ListAPIView):
 ####################################################new API ##############################################################################
 class HousekeeperListView(APIView):
     permission_classes = [AllowAny]
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'request_type',
+                openapi.IN_QUERY,
+                description="Comma-separated list of request types to filter by",
+                type=openapi.TYPE_STRING,
+                required=False
+            ),
+            openapi.Parameter(
+                'employment_type',
+                openapi.IN_QUERY,
+                description="Employment type to filter by",
+                type=openapi.TYPE_STRING,
+                required=False
+            ),
+            openapi.Parameter(
+                'nationality_type',
+                openapi.IN_QUERY,
+                description="Nationality to filter by",
+                type=openapi.TYPE_STRING,
+                required=False
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="List of housekeepers",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'name': openapi.Schema(type=openapi.TYPE_STRING),
+                            'age': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'gender': openapi.Schema(type=openapi.TYPE_STRING),
+                            'nationality': openapi.Schema(type=openapi.TYPE_STRING),
+                            'religion': openapi.Schema(type=openapi.TYPE_STRING),
+                            'isactive': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            'is_available': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            'worked_before': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            'worked_before_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
+                            'employment_type': openapi.Schema(type=openapi.TYPE_STRING),
+                            'monthly_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
+                            'pricePerMonth': openapi.Schema(type=openapi.TYPE_NUMBER),
+                        }
+                    )
+                )
+            ),
+            400: openapi.Response(
+                description="Bad Request",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'detail': openapi.Schema(type=openapi.TYPE_STRING),
+                    }
+                )
+            ),
+        }
+    )
     
     def get(self, request):
         request_type_name = request.query_params.get('request_type')
@@ -86,6 +146,66 @@ class HousekeeperListView(APIView):
 
 class HousekeeperFilterView(APIView):
     permission_classes = [AllowAny]
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'religion',
+                openapi.IN_QUERY,
+                description="Filter housekeepers by religion",
+                type=openapi.TYPE_STRING,
+                required=False
+            ),
+            openapi.Parameter(
+                'age',
+                openapi.IN_QUERY,
+                description="Filter housekeepers by age",
+                type=openapi.TYPE_INTEGER,
+                required=False
+            ),
+            openapi.Parameter(
+                'nationality',
+                openapi.IN_QUERY,
+                description="Filter housekeepers by nationality",
+                type=openapi.TYPE_STRING,
+                required=False
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="List of housekeepers",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'name': openapi.Schema(type=openapi.TYPE_STRING),
+                            'age': openapi.Schema(type=openapi.TYPE_INTEGER),
+                            'gender': openapi.Schema(type=openapi.TYPE_STRING),
+                            'nationality': openapi.Schema(type=openapi.TYPE_STRING),
+                            'religion': openapi.Schema(type=openapi.TYPE_STRING),
+                            'isactive': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            'is_available': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            'worked_before': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            'worked_before_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
+                            'employment_type': openapi.Schema(type=openapi.TYPE_STRING),
+                            'monthly_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
+                            'pricePerMonth': openapi.Schema(type=openapi.TYPE_NUMBER),
+                        }
+                    )
+                )
+            ),
+            400: openapi.Response(
+                description="Invalid request parameters",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(type=openapi.TYPE_STRING),
+                    }
+                )
+            ),
+        }
+    )
     def get(self, request, *args, **kwargs):
         religion = request.GET.get('religion')
         age = request.GET.get('age')

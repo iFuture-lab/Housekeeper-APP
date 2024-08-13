@@ -23,9 +23,54 @@ class PericePerNationalityRetrieveUpdateDestroyView(generics.RetrieveUpdateDestr
     serializer_class = PericePerNationalitySerializer
     permission_classes = [AllowAny]
     
+    @swagger_auto_schema(
+        operation_description="Create a new PericePerNationality",
+        responses={
+            201: PericePerNationalitySerializer,
+            400: 'Bad Request'
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+    
         
 class PericePerNationalityCreateView(generics.ListCreateAPIView):
     queryset = PericePerNationality.objects.all()
     serializer_class = PericePerNationalitySerializer
-    permission_classes = [AllowAny] 
+    permission_classes = [AllowAny]
+    
+    
+    @swagger_auto_schema(
+        operation_description="Retrieve a PericePerNationality by ID",
+        responses={
+            200: PericePerNationalitySerializer,
+            404: 'Not Found'
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Update a PericePerNationality by ID",
+        request_body=PericePerNationalitySerializer,
+        responses={
+            200: PericePerNationalitySerializer,
+            400: 'Bad Request',
+            404: 'Not Found'
+        }
+    )
+    def put(self, request, *args, **kwargs):
+        return super().put(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Delete a PericePerNationality by ID",
+        responses={
+            204: 'No Content',
+            404: 'Not Found'
+        }
+    )
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs) 
+    
+    
     

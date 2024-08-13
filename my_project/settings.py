@@ -31,9 +31,13 @@ TAQNYAT_SENDER= 'OFAQ'
 
 # AUTH_USER_MODEL = 'login.AdminUser'
 
-SECURE_SSL_REDIRECT = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# SECURE_SSL_REDIRECT = True
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+CORS_ALLOWED_ORIGINS = [
+    'https://ofaq.ifuture.sa',
+    'http://localhost:8000',  # Adjust based on your frontend URL
+]
 
 
 
