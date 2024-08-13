@@ -62,9 +62,9 @@ urlpatterns = [
     path('religion/<uuid:pk>/',ReligionDetailView.as_view(), name='religion-detail'),
     path('religion/batch/',ReligionBatchDetailView.as_view(), name='religion-batch'),
     
-    path('employement-type/',EmploymentTypeCreateView.as_view(), name='employement-type-create'),
-    path('employement-type/<uuid:pk>/',EmploymentTypeDetailView.as_view(), name='employement-type-detail'),
-    path('employement-type/batch/',EmploymentTypeBatchDetailView.as_view(), name='employement-type-batch'),
+    path('employment-type/',EmploymentTypeCreateView.as_view(), name='employement-type-create'),
+    path('employment-type/<uuid:pk>/',EmploymentTypeDetailView.as_view(), name='employement-type-detail'),
+    path('employment-type/batch/',EmploymentTypeBatchDetailView.as_view(), name='employement-type-batch'),
     # path('action-log', include(router.urls)),
     
     
