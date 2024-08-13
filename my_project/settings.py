@@ -31,6 +31,10 @@ TAQNYAT_SENDER= 'OFAQ'
 
 # AUTH_USER_MODEL = 'login.AdminUser'
 
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

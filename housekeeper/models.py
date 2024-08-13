@@ -98,7 +98,7 @@ class HousekeeperRequestType(models.Model):
     
 class HireRequest(models.Model):
     
-    default_service_type = ServiceType.objects.get(name='Hire')  
+    
     def get_default_service_type():
         return ServiceType.objects.get(name='Hire')  
 
