@@ -373,7 +373,6 @@ class HousekeeperListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
                             'isactive': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                             'is_available': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                             'worked_before': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                            'worked_before_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
                             'employment_type': openapi.Schema(type=openapi.TYPE_STRING),
                             'monthly_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
                             'pricePerMonth': openapi.Schema(type=openapi.TYPE_NUMBER),
