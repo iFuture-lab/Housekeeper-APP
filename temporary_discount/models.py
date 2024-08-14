@@ -9,7 +9,7 @@ from django.utils import timezone
 # Create your models here.
 class TempoararyDiscount(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    price_per_nationality = models.ForeignKey(PericePerNationality, on_delete=models.CASCADE)
+    # price_per_nationality = models.ForeignKey(PericePerNationality, on_delete=models.CASCADE)
     discount_percentage = models.FloatField()
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
@@ -32,6 +32,12 @@ class CustomPackage(models.Model):
     is_discount = models.BooleanField(default=False)
     is_indefinitely = models.BooleanField(default=False)
     nationallities = models.ManyToManyField(Nationallity, through='CustomPackageNationallity',related_name='custom_packages')
+    employment_type = models.ForeignKey('housekeeper.EmploymentType',on_delete=models.CASCADE,null=True)
+    worked_before_salary = models.FloatField(null=True)  
+    new_housekeeper_salary = models.FloatField(null=True)
+    
+    
+    
 
     def __str__(self):
         return self.name

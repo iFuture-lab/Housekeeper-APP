@@ -107,6 +107,7 @@ INSTALLED_APPS = [
     'payment',
     'service_type',
     'perice_per_nationality',
+    'role_per_user',
     'temporary_discount',
     'django_filters',
     'rest_framework',

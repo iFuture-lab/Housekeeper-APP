@@ -9,6 +9,7 @@ from drf_yasg import openapi
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from uuid import UUID
 
 class NationalityCreateView(generics.ListCreateAPIView):
     queryset = Nationallity.objects.all()
@@ -45,12 +46,13 @@ class NationalitiesBatchDetailView(APIView):
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Query the Housekeeper objects with the given IDs
-        national = Nationallity.objects.filter(id__in=ids)
+        national = Nationallity.objects.filter(id__in=uuid_list)
 
         # Serialize the data
         serializer = NationalitySerializer(national, many=True)
@@ -74,15 +76,17 @@ class NationalitiesBatchDetailView(APIView):
     def delete(self, request, *args, **kwargs):
         # Extract the 'ids' parameter from the query parameters
         ids = request.query_params.get('ids', '')
+        uuid_list = [UUID(id_str) for id_str in ids.split(',')]
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Delete the Housekeeper objects with the given IDs
-        count, _ = Nationallity.objects.filter(id__in=ids).delete()
+        count, _ = Nationallity.objects.filter(id__in=uuid_list).delete()
 
         # Return the count of deleted objects
         return Response({"deleted": count}, status=status.HTTP_204_NO_CONTENT)

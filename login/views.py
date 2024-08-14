@@ -53,6 +53,7 @@ from .utils import send_otp, verify_otp,resend_otp
 
 from django.core.cache import cache
 from .authentication import CustomJWTAuthentication,CustomUserAuthentication
+from role_per_user.models import RolePerClient,RolePerUser
 
 User = get_user_model()
 
@@ -416,6 +417,7 @@ class LoginView(generics.GenericAPIView):
                     'refresh': openapi.Schema(type=openapi.TYPE_STRING),
                     'access': openapi.Schema(type=openapi.TYPE_STRING),
                     'user_info':openapi.Schema(type=openapi.TYPE_STRING),
+                    'role':openapi.Schema(type=openapi.TYPE_STRING),
                 }
             )),
             400: "Invalid credentials"
@@ -438,6 +440,8 @@ class LoginView(generics.GenericAPIView):
             access_token.payload.update({
                 'user_id': str(user.id)
             })
+            
+            client_roles = RolePerClient.objects.filter(clients=user).values_list('role', flat=True).first()
             return Response({
                 'phone_number': user.phone_number,
                 'refresh': str(refresh),
@@ -447,7 +451,8 @@ class LoginView(generics.GenericAPIView):
                     'username': user.fullName,
                     'email': user.email,
                     'nationalID': user.nationalID,
-                    'dateOfBirth':user.dateOfBirth
+                    'dateOfBirth':user.dateOfBirth,
+                    'role':client_roles
                 }
             })
         else:
@@ -537,6 +542,7 @@ class LoginViewsystem(generics.GenericAPIView):
         access_token.payload.update({
                 'user_id': user.id
             })
+        user_roles = RolePerUser.objects.filter(users=user).values_list('role', flat=True).first()
         return Response({
             'username':user.username,
             'email': user.email,
@@ -544,7 +550,7 @@ class LoginViewsystem(generics.GenericAPIView):
             'access': str(access_token),
             'is_staff': user.is_staff,
             'is_superuser': user.is_superuser,
-            # 'role':user.role,
+            'role':user_roles
         })
     
     

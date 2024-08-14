@@ -19,6 +19,11 @@ from .filter import StatusFilter
 from rest_framework.permissions import IsAuthenticated
 from .utils import ActionLoggingMixin,send_message
 from uuid import UUID
+import uuid
+from django.core.exceptions import ValidationError
+
+from temporary_discount.models import CustomPackage
+
 
 
 
@@ -93,7 +98,7 @@ class HousekeeperListView(APIView):
                             'isactive': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                             'is_available': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                             'worked_before': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                            'worked_before_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
+                            'salary': openapi.Schema(type=openapi.TYPE_NUMBER),
                             'employment_type': openapi.Schema(type=openapi.TYPE_STRING),
                             'monthly_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
                             'pricePerMonth': openapi.Schema(type=openapi.TYPE_NUMBER),
@@ -114,32 +119,77 @@ class HousekeeperListView(APIView):
     )
     
     def get(self, request):
-        request_type_name = request.query_params.get('request_type')
-        employment_type_name = request.query_params.get('employment_type')
-        nationality_name = request.query_params.get('nationality_type')
+        request_type_ids = request.query_params.get('request_type')
+        employment_type_id = request.query_params.get('employment_type')
+        nationality_id = request.query_params.get('nationality_type')
+        custom_package_id = request.query_params.get('custom_package')
 
         housekeepers = Housekeeper.objects.all()
 
-        if request_type_name:
-            request_types = request_type_name.split(',')
-            housekeeper_ids = HousekeeperRequestType.objects.filter(
-                request_type__name__in=request_types
-            ).values_list('housekeeper_id', flat=True).distinct()
+    # Filter by request_type_ids
+        if request_type_ids:
+            try:
+                request_type_ids_list = request_type_ids.split(',')
+            # Convert to UUIDs
+                request_type_ids_list = [uuid.UUID(id) for id in request_type_ids_list]
+                housekeeper_ids = HousekeeperRequestType.objects.filter(
+                    request_type__id__in=request_type_ids_list
+                ).values_list('housekeeper_id', flat=True).distinct()
             
-            housekeepers = housekeepers.filter(id__in=housekeeper_ids)
+                housekeepers = housekeepers.filter(id__in=housekeeper_ids)
+            except ValueError:
+                return Response({"error": "Invalid UUID in request_type parameter"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if employment_type_name:
-            housekeepers = housekeepers.filter(
-                employment_type__name=employment_type_name
+    # Filter by employment_type_id
+        if employment_type_id:
+            try:
+                employment_type_uuid = uuid.UUID(employment_type_id)
+                housekeepers = housekeepers.filter(
+                employment_type__id=employment_type_uuid
+                )
+            except ValueError:
+                return Response({"error": "Invalid UUID in employment_type parameter"}, status=status.HTTP_400_BAD_REQUEST)
+        
+    
+    # Filter by nationality_id
+        if nationality_id:
+            try:
+                nationality_uuid = uuid.UUID(nationality_id)
+                housekeepers = housekeepers.filter(
+                nationality__id=nationality_uuid
+                )
+            except ValueError:
+                return Response({"error": "Invalid UUID in nationality_type parameter"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if custom_package_id:
+            try:
+                custom_package = CustomPackage.objects.get(id=uuid.UUID(custom_package_id))
+                housekeepers = housekeepers.filter(
+                nationality__in=custom_package.nationallities.all(),
+                employment_type=custom_package.employment_type,
             )
+                housekeeper_ids = HousekeeperRequestType.objects.filter(
+                request_type=custom_package.request_type
+            ).values_list('housekeeper_id', flat=True).distinct()
 
-        if nationality_name:
-            housekeepers = housekeepers.filter(
-                nationality__Nationality=nationality_name
-            )
+                housekeepers = housekeepers.filter(id__in=housekeeper_ids)
+            
+            except CustomPackage.DoesNotExist:
+                return Response({"error": "Invalid Custom Package ID"}, status=status.HTTP_400_BAD_REQUEST)
+            except ValueError:
+                return Response({"error": "Invalid UUID in custom_package_id parameter"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            serializer = HousekeeperSerializer(housekeepers.distinct(), many=True, context={'custom_package': custom_package},)
+        else:
+            serializer = HousekeeperSerializer(housekeepers.distinct(), many=True)
 
-        serializer = HousekeeperSerializer(housekeepers.distinct(), many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+            
+
+    # # Serialize the queryset and return the response
+    #     serializer = HousekeeperSerializer(housekeepers.distinct(), many=True)
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
+        
 
 
 ###############################################
@@ -187,7 +237,6 @@ class HousekeeperFilterView(APIView):
                             'isactive': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                             'is_available': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                             'worked_before': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                            'worked_before_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
                             'employment_type': openapi.Schema(type=openapi.TYPE_STRING),
                             'monthly_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
                             'pricePerMonth': openapi.Schema(type=openapi.TYPE_NUMBER),
@@ -206,30 +255,47 @@ class HousekeeperFilterView(APIView):
             ),
         }
     )
+    
     def get(self, request, *args, **kwargs):
-        religion = request.GET.get('religion')
+        religion_id = request.GET.get('religion')
         age = request.GET.get('age')
-        nationality = request.GET.get('nationality')
+        nationality_id = request.GET.get('nationality')
+        ids = request.GET.getlist('ids')  # Assuming the ids are passed as a list
 
-        # Start with all available housekeepers
+    # Start with all available housekeepers
         housekeepers = Housekeeper.objects.filter(is_available=True)
 
-        # Apply filters if provided
-        if religion:
-            housekeepers = housekeepers.filter(religion__name=religion)
-        
+    # Apply filters if provided
+        if religion_id:
+            try:
+                religion_uuid = UUID(religion_id)
+                housekeepers = housekeepers.filter(religion_id=religion_uuid)
+            except ValueError:
+                return Response({"error": "Invalid religion UUID format"}, status=400)
+    
         if age:
             try:
                 age = int(age)
                 housekeepers = housekeepers.filter(Age=age)
             except ValueError:
                 return Response({"error": "Invalid age format"}, status=400)
-        
-        if nationality:
-            housekeepers = housekeepers.filter(nationality__Nationality=nationality)
+    
+        if nationality_id:
+            try:
+                nationality_uuid = UUID(nationality_id)
+                housekeepers = housekeepers.filter(nationality_id=nationality_uuid)
+            except ValueError:
+                return Response({"error": "Invalid nationality UUID format"}, status=400)
+    
 
         serializer = HousekeeperSerializer(housekeepers, many=True)
         return Response(serializer.data)
+    
+        
+        
+        
+
+        
         
 
 

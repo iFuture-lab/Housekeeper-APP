@@ -79,6 +79,7 @@ class DummyRecruitmentRequestSerializer(serializers.ModelSerializer):
 
 class HousekeeperSerializer(serializers.ModelSerializer):
     # nationality = serializers.PrimaryKeyRelatedField(queryset=Nationallity.objects.all())
+    salary = serializers.SerializerMethodField()
    
     request_types = serializers.PrimaryKeyRelatedField(
         queryset=ServiceType.objects.all(),
@@ -88,6 +89,22 @@ class HousekeeperSerializer(serializers.ModelSerializer):
     class Meta:
         model = Housekeeper
         fields = '__all__'
+        
+    def get_salary(self, obj):
+        custom_package = self.context.get('custom_package')
+        if custom_package:
+            if obj.worked_before:
+                return custom_package.worked_before_salary
+            else:
+                return custom_package.new_housekeeper_salary
+        return None
+    
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation.pop('rating', None)
+    
+        return representation
         
         
     
