@@ -11,3 +11,15 @@ class RolePerClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = RolePerClient
         fields = '__all__'
+        
+        
+class RoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RolePerClient
+        fields = '__all__'
+        
+        
+class PermissioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RolePerClient
+        fields = '__all__'

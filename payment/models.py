@@ -1,12 +1,21 @@
 from django.db import models
 import uuid
-
+from housekeeper.models import HireRequest,RecruitmentRequest,TransferRequest
 # Create your models here.
 
 
     
     
 class Payment(models.Model):
+    
+    
+    hire_request = models.ForeignKey(HireRequest, blank=True, null=True, on_delete=models.CASCADE)
+    transfer_request = models.ForeignKey(TransferRequest, blank=True, null=True, on_delete=models.CASCADE)
+    recruitment_request = models.ForeignKey(RecruitmentRequest, blank=True, null=True, on_delete=models.CASCADE)
+
+
+
+
     
     ACTION_CHOICES = [
         ('SALE', 'Sale'),

@@ -6,6 +6,7 @@ import logging
 from datetime import datetime
 import base64
 from django.conf import settings
+from housekeeper.models import HireRequest,RecruitmentRequest,TransferRequest,Status
 
 logger = logging.getLogger(__name__)
 LOG_FILE_PATH = settings.TEST_LOG_FILE_PATH
@@ -46,6 +47,8 @@ def payment_callback(request):
             action = data.get('action') or data.get('type')
             status = data.get('status')
             result = data.get('result', '')
+            order_id = data.get('order_id') or data.get('order_number')
+            print(order_id)
 
             redirect_params = data.get('redirect_params[body]', '')
             if redirect_params:
@@ -84,6 +87,41 @@ def payment_callback(request):
             card = data.get('card')
             card_expiration_date = data.get('card_expiration_date')
             source = data.get('source')
+            
+            # try:
+            #     hire_request = HireRequest.objects.get(order_id=order_id)
+            # except HireRequest.DoesNotExist:
+            #     return JsonResponse({'error': 'HireRequest not found'}, status=404)
+            
+            
+            # hire_request = HireRequest.objects.get(order_id=order_id)
+            # transfer_request = TransferRequest.objects.get(order_id=order_id)
+            # recruitment_request = RecruitmentRequest.objects.get(order_id=order_id)
+            
+            
+                # Define a mapping of models
+            model_mapping = {
+            'hire_request': HireRequest,
+            'transfer_request': TransferRequest,
+            'recruitment_request': RecruitmentRequest,
+        }
+
+        # Attempt to find the request and model
+            request_obj = None
+            request_model_name = None
+
+            for model_name, model in model_mapping.items():
+                try:
+                    request_obj = model.objects.get(order_id=order_id)
+                    request_model_name = model_name
+                    break
+                except model.DoesNotExist:
+                    continue
+
+            if request_obj is None:
+                return JsonResponse({'error': 'Request not found'}, status=404)
+            
+            
         
             # Create or update the Payment record
             Payment.objects.update_or_create(
@@ -91,6 +129,9 @@ def payment_callback(request):
                 defaults={
                     'action': action,
                     'result': result,
+                    # 'hire_request': hire_request,
+                    # 'transfer_request':transfer_request,
+                    # 'recruitment_request':recruitment_request,
                     'status': status,
                     'trans_id': trans_id,
                     'trans_date': trans_date,
@@ -108,8 +149,54 @@ def payment_callback(request):
                     'card_expiration_date': card_expiration_date,
                     'hash': hash_value,
                     'source': source,
+                    request_model_name: request_obj
                 }
             )
+            
+            #Update the HireRequest status 
+            # if hire_request:
+            #     print(hire_request)
+            #     if status == 'success':
+            #         print("tired")
+            #         hire_request.Status = 'paid'
+            #         print(hire_request.Status)
+                    
+            #         hire_request.save()
+                    
+            # elif transfer_request:
+            #     if status == 'success':
+            #         transfer_request.status='paid' 
+            #         transfer_request.save()
+                    
+            # elif recruitment_request:
+            #     if status == 'success':
+            #         recruitment_request.status='paid'
+            #         recruitment_request.save()
+            
+            
+            status_instance, created = Status.objects.get_or_create(Status='Paid')
+
+            if request_obj:
+                request_obj.status = status_instance
+                request_obj.save()
+            
+            # if request_obj:
+            #     logger.info(f'Attempting to update status to for order_id {order_id}')
+                 
+            #     print("tirrrrrrrrrrrrrred")
+            #     request_obj.status = 'paid'
+            #     print(request_obj.status)
+            #     request_obj.save()
+            #     print(request_obj)
+            #     logger.info(f'Attempting to update status to {request_obj.status} for order_id {order_id}')
+                
+            # else:
+            #     request_obj.Status = 'payment_failed'
+
+            #     request_obj.save()
+
+                
+                
         
             logger.info('Payment record updated or created successfully.')
             return JsonResponse({'success': True})

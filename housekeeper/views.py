@@ -24,6 +24,12 @@ from django.core.exceptions import ValidationError
 
 from temporary_discount.models import CustomPackage
 
+from role.permissions import HasPermission
+
+from django.conf import settings
+from django.http import HttpResponse
+import os
+
 
 
 
@@ -595,6 +601,17 @@ class HireRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
     serializer_class = HireRequestSerializer
     permission_classes = [AllowAny] 
     
+    def check_template_path(request):
+        template_name = 'contract_Recruitment.docx'
+        template_path = os.path.join(settings.BASE_DIR, 'templates', template_name)
+        print(template_path)
+        if os.path.exists(template_path):
+            print("hhhhhhhhhhhhhhhhhhhhhhh")
+            return HttpResponse(f'Template found at: {template_path}')
+        else:
+            print("notttttttttttttttttttttttttt")
+            return HttpResponse(f'Template not found at: {template_path}')
+    
     def get(self, request, *args, **kwargs):
         # Log the action  
         user = request.user if request.user.is_authenticated else None
@@ -606,9 +623,9 @@ class HireRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
         
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)  
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
     
@@ -620,28 +637,46 @@ class HireRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
             model_name="Housekeeper"
         )
         
-        test_mode = request.data.get('test_mode', False)
-        # Retrieve request details
-        request_details = {
-            'housekeeper': serializer.validated_data.get('housekeeper'),
-            'requester_contact': serializer.validated_data.get('requester_contact'),
-            'request_date': serializer.validated_data.get('request_date'),
-            'duration': serializer.validated_data.get('duration'),
-            'pericepernationality_id': serializer.validated_data.get('pericepernationality_id.price'),
-            'total_price': serializer.validated_data.get('total_price'),
-            'status': serializer.validated_data.get('status'),
-        }
         
-        # Send notification to the requester with request details
+        order_id = f"{serializer.instance.id}-{uuid.uuid4().hex[:8]}"
+        serializer.instance.order_id = order_id
+        serializer.instance.save()
+        
+        hire_request_serializer = HireRequestSerializer(serializer.instance)
+    
+    # Retrieve all request details and include order_id
+        request_details = hire_request_serializer.data.copy()  # Copy serialized data
+        request_details['order_id'] = order_id  # Add the order_id to the details
+    
+    # Send notification to the requester with request details
         phone_number = serializer.validated_data.get('requester_contact')
-        send_message(phone_number, request_details,test_mode=test_mode)
-        print(send_message)
-        
+        test_mode = request.data.get('test_mode', False)
         success, message = send_message(phone_number, request_details, test_mode=test_mode)
     
         return Response({
-        'message': message
-    }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
+        'message': message,
+        'request_details': request_details  # Include all request details in the response
+        }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
+        # # Retrieve request details
+        # request_details = {
+        #     'housekeeper': serializer.validated_data.get('housekeeper'),
+        #     'requester_contact': serializer.validated_data.get('requester_contact'),
+        #     'request_date': serializer.validated_data.get('request_date'),
+        #     'duration': serializer.validated_data.get('duration'),
+        #     'total_price': serializer.validated_data.get('total_price'),
+        #     'status': serializer.validated_data.get('status'),
+        # }
+        
+        # Send notification to the requester with request details
+    #     phone_number = serializer.validated_data.get('requester_contact')
+        
+    #     success, message = send_message(phone_number, request_details, test_mode=test_mode)
+    
+    #     return Response({
+    #     'message': message,
+    #     'request_details': request_details 
+        
+    # }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
 
      
 
@@ -877,6 +912,7 @@ class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPI
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
+        # Create the recruitment request instance
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
     
@@ -888,27 +924,46 @@ class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPI
             model_name="RecruitmentRequest"
         )
         
-        test_mode = request.data.get('test_mode', False)
-        # Retrieve request details
-        request_details = {
-            'housekeeper': serializer.validated_data.get('housekeeper'),
-            'requester':serializer.validated_data.get('requester'),
-            'requester_contact': serializer.validated_data.get('requester_contact'),
-            'request_date': serializer.validated_data.get('request_date'),
-            'visa_status':serializer.validated_data.get('visa_status'),
-            'status': serializer.validated_data.get('status'),
-        }
+        order_id = f"{serializer.instance.id}-{uuid.uuid4().hex[:8]}"
+        serializer.instance.order_id = order_id
+        serializer.instance.save()
         
-        # Send notification to the requester with request details
+        recruitment_request_serializer = RecruitmentRequestSerializer(serializer.instance)
+    
+    
+        request_details = recruitment_request_serializer.data.copy()  
+        request_details['order_id'] = order_id 
+    
         phone_number = serializer.validated_data.get('requester_contact')
-        send_message(phone_number, request_details,test_mode=test_mode)
-        print(send_message)
-        
+        test_mode = request.data.get('test_mode', False)
         success, message = send_message(phone_number, request_details, test_mode=test_mode)
     
         return Response({
-        'message': message
-    }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
+        'message': message,
+        'request_details': request_details  # Include all request details in the response
+        }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
+        
+    #     test_mode = request.data.get('test_mode', False)
+    #     # Retrieve request details
+    #     request_details = {
+    #         'housekeeper': serializer.validated_data.get('housekeeper'),
+    #         'requester':serializer.validated_data.get('requester'),
+    #         'requester_contact': serializer.validated_data.get('requester_contact'),
+    #         'request_date': serializer.validated_data.get('request_date'),
+    #         'visa_status':serializer.validated_data.get('visa_status'),
+    #         'status': serializer.validated_data.get('status'),
+    #     }
+        
+    #     # Send notification to the requester with request details
+    #     phone_number = serializer.validated_data.get('requester_contact')
+    #     send_message(phone_number, request_details,test_mode=test_mode)
+    #     print(send_message)
+        
+    #     success, message = send_message(phone_number, request_details, test_mode=test_mode)
+    
+    #     return Response({
+    #     'message': message
+    # }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
 
      
 
@@ -1158,26 +1213,45 @@ class TransferRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIVie
             model_name="TransferRequest"
         )
         
+        order_id = f"{serializer.instance.id}-{uuid.uuid4().hex[:8]}"
+        serializer.instance.order_id = order_id
+        serializer.instance.save()
+        
+        transfer_request_serializer = TransferRequestSerializer(serializer.instance)
+    
+    
+        request_details = transfer_request_serializer.data.copy()  
+        request_details['order_id'] = order_id 
+    
+        phone_number = serializer.validated_data.get('request_contact')
         test_mode = request.data.get('test_mode', False)
-        # Retrieve request details
-        request_details = {
-            'housekeeper': serializer.validated_data.get('housekeeper'),
-            'requester':serializer.validated_data.get('requester'),
-            'requester_contact': serializer.validated_data.get('requester_contact'),
-             'request_date': serializer.validated_data.get('request_date'),
-            'status': serializer.validated_data.get('status'),
-        }
-        
-        # Send notification to the requester with request details
-        phone_number = serializer.validated_data.get('requester_contact')
-        send_message(phone_number, request_details,test_mode=test_mode)
-        print(send_message)
-        
         success, message = send_message(phone_number, request_details, test_mode=test_mode)
     
         return Response({
-        'message': message
-    }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
+        'message': message,
+        'request_details': request_details  # Include all request details in the response
+        }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
+        
+    #     test_mode = request.data.get('test_mode', False)
+    #     # Retrieve request details
+    #     request_details = {
+    #         'housekeeper': serializer.validated_data.get('housekeeper'),
+    #         'requester':serializer.validated_data.get('requester'),
+    #         'requester_contact': serializer.validated_data.get('requester_contact'),
+    #          'request_date': serializer.validated_data.get('request_date'),
+    #         'status': serializer.validated_data.get('status'),
+    #     }
+        
+    #     # Send notification to the requester with request details
+    #     phone_number = serializer.validated_data.get('requester_contact')
+    #     send_message(phone_number, request_details,test_mode=test_mode)
+    #     print(send_message)
+        
+    #     success, message = send_message(phone_number, request_details, test_mode=test_mode)
+    
+    #     return Response({
+    #     'message': message
+    # }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
 
     
 

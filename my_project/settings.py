@@ -108,6 +108,7 @@ INSTALLED_APPS = [
     'service_type',
     'perice_per_nationality',
     'role_per_user',
+    'contract',
     'temporary_discount',
     'django_filters',
     'rest_framework',
