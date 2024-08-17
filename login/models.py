@@ -12,7 +12,22 @@ from django.conf import settings
 import uuid
 
 
-# Create your models here.# login/models.py
+
+
+######################### soft delteing ##################################
+
+class SoftDeleteManager(models.Manager):
+    def get_queryset(self):
+        #  filters out soft-deleted records
+        return super().get_queryset().filter(deleted_at__isnull=True)
+
+    def deleted(self):
+        # Return only soft-deleted records
+        return super().get_queryset().filter(deleted_at__isnull=False)
+
+    def with_deleted(self):
+        # all the records 
+        return super().get_queryset()
 
 
 
@@ -22,6 +37,24 @@ class BlacklistedToken(models.Model):
     token = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
+    objects = SoftDeleteManager()  # Custom manager
+    all_objects = models.Manager()  # Default manager to access all records, including deleted
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
 
     def __str__(self):
         return self.token
@@ -72,6 +105,23 @@ class CustomUser(AbstractBaseUser):
     REQUIRED_FIELDS = ['phone_number']
 
     objects = CustomUserManager()
+    
+    soft_deleted = SoftDeleteManager()
+    all_objects = models.Manager()  # Default manager to access all records, including deleted
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
 
     def __str__(self):
         return self.fullName
@@ -83,6 +133,27 @@ class OtpMessage(models.Model):
     name = models.CharField(max_length=255)
     body = models.TextField()
     is_active = models.BooleanField(default=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
+    objects = SoftDeleteManager()  
+    all_objects = models.Manager()  
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
+
+    def __str__(self):
+        return self.name
     
 
     

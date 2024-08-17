@@ -15,6 +15,20 @@ from django.utils import timezone
 
 
 User = get_user_model()
+class SoftDeleteManager(models.Manager):
+    def get_queryset(self):
+        #  filters out soft-deleted records
+        return super().get_queryset().filter(deleted_at__isnull=True)
+
+    def deleted(self):
+        # Return only soft-deleted records
+        return super().get_queryset().filter(deleted_at__isnull=False)
+
+    def with_deleted(self):
+        # all the records 
+        return super().get_queryset()
+    
+    
 
 
 
@@ -25,16 +39,52 @@ class ActionLog(models.Model):
     action_type = models.CharField(max_length=255)
     description = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     
 
     def __str__(self):
         return f"{self.timestamp} - {self.action_type} by {self.user}"
+    
+    objects = SoftDeleteManager()  # Custom manager
+    all_objects = models.Manager()  # Default manager to access all records, including deleted
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
 
 
 class Status(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     Status= models.CharField(max_length=50)
     is_active = models.BooleanField(default=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
+    objects = SoftDeleteManager()  # Custom manager
+    all_objects = models.Manager()  # Default manager to access all records, including deleted
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
     
     def __str__(self):
         return self.Status
@@ -43,6 +93,24 @@ class Religion(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
+    objects = SoftDeleteManager()  # Custom manager
+    all_objects = models.Manager()  # Default manager to access all records, including deleted
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
 
     def __str__(self):
         return self.name
@@ -52,6 +120,28 @@ class EmploymentType(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
+    objects = SoftDeleteManager()  # Custom manager
+    all_objects = models.Manager()  # Default manager to access all records, including deleted
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
+
+    def __str__(self):
+        return self.name
+    
 
     def __str__(self):
         return self.name
@@ -77,6 +167,28 @@ class Housekeeper(models.Model):
     languages_spoken = models.JSONField() 
     rating = models.FloatField() 
     request_types= models.ManyToManyField(ServiceType, through='HousekeeperRequestType',related_name='housekeeper')
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
+    objects = SoftDeleteManager()  # Custom manager
+    all_objects = models.Manager()  # Default manager to access all records, including deleted
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
+
+    def __str__(self):
+        return self.name
+    
     
 
     
@@ -89,8 +201,30 @@ class HousekeeperRequestType(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE)
     request_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE)
+    
+    objects = SoftDeleteManager()  
+    all_objects = models.Manager()  
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
+
+    def __str__(self):
+        return self.name
+    
+    deleted_at = models.DateTimeField(null=True, blank=True)
     class Meta:
-        unique_together = ('housekeeper', 'request_type')  # Ensure unique pairs
+        unique_together = ('housekeeper', 'request_type')  
 
     def __str__(self):
         return f"{self.housekeeper.Name} - {self.request_type.name}"
@@ -123,6 +257,28 @@ class HireRequest(models.Model):
     custom_package_id = models.ForeignKey(CustomPackage, on_delete=models.CASCADE,null=True)
     request_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE,null=True,default=get_default_service_type)
     order_id = models.CharField(max_length=255, unique=True, blank=True, null=True) 
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
+    objects = SoftDeleteManager()  # Custom manager
+    all_objects = models.Manager()  # Default manager to access all records, including deleted
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
+
+    def __str__(self):
+        return self.name
+    
     
     
     def save(self, *args, **kwargs):
@@ -183,7 +339,29 @@ class RecruitmentRequest(models.Model):
     total_price =models.FloatField(default=0.0)
     custom_package_id = models.ForeignKey(CustomPackage, on_delete=models.CASCADE,null=True)
     request_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE,null=True,default=get_default_service_type)
-    order_id = models.CharField(max_length=255, unique=True, blank=True, null=True) 
+    order_id = models.CharField(max_length=255, unique=True, blank=True, null=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
+    objects = SoftDeleteManager()  # Custom manager
+    all_objects = models.Manager()  # Default manager to access all records, including deleted
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
+
+    def __str__(self):
+        return self.name
+    
     
     
     def save(self, *args, **kwargs):
@@ -241,6 +419,28 @@ class TransferRequest(models.Model):
     custom_package_id = models.ForeignKey(CustomPackage, on_delete=models.CASCADE,null=True)
     request_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE,null=True,default=get_default_service_type)
     order_id = models.CharField(max_length=255, unique=True, blank=True, null=True) 
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
+    objects = SoftDeleteManager()  # Custom manager
+    all_objects = models.Manager()  # Default manager to access all records, including deleted
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
+
+    def __str__(self):
+        return self.name
+    
     
     
     def save(self, *args, **kwargs):

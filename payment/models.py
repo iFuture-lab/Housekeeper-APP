@@ -2,6 +2,24 @@ from django.db import models
 import uuid
 from housekeeper.models import HireRequest,RecruitmentRequest,TransferRequest
 # Create your models here.
+from django.utils import timezone
+
+
+
+###################soft#################################################
+
+class SoftDeleteManager(models.Manager):
+    def get_queryset(self):
+        #  filters out soft-deleted records
+        return super().get_queryset().filter(deleted_at__isnull=True)
+
+    def deleted(self):
+        # Return only soft-deleted records
+        return super().get_queryset().filter(deleted_at__isnull=False)
+
+    def with_deleted(self):
+        # all the records 
+        return super().get_queryset()
 
 
     
@@ -69,6 +87,30 @@ class Payment(models.Model):
     card_expiration_date = models.CharField(max_length=10, blank=True, null=True)
     hash = models.CharField(max_length=255, blank=True, null=True)
     source = models.CharField(max_length=50, blank=True, null=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
+    
+    objects = SoftDeleteManager()  
+    all_objects = models.Manager()  
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
+
+
+    
+    
+    
     
     def __str__(self):
         return f"{self.action} - {self.status} - {self.order_id}"
