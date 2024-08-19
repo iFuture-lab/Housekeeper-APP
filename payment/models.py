@@ -94,17 +94,17 @@ class Payment(models.Model):
     all_objects = models.Manager()  
 
     def delete(self):
-       #soft deleting
+      
         self.deleted_at = timezone.now()
         self.save()
 
     def restore(self):
-        # Restore a soft-deleted record 
+    
         self.deleted_at = None
         self.save()
 
     def hard_delete(self):
-        # delete the record in real 
+      
         super().delete()
 
 

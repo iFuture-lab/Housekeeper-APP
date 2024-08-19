@@ -19,31 +19,31 @@ def payment_callback(request):
         
         if content_type == 'application/json':
             try:
-                data = json.loads(request.body.decode('utf-8'))  # JSON data
+                data = json.loads(request.body.decode('utf-8'))  
                 data_type = 'JSON'
             except json.JSONDecodeError:
                 return JsonResponse({'error': 'Invalid JSON'}, status=400)
         
         elif content_type == 'application/x-www-form-urlencoded':
-            data = request.POST.dict()  # Form data
+            data = request.POST.dict()  
             data_type = 'Form'
         
         elif content_type == 'text/plain':
-            data = request.body.decode('utf-8')  # Plain text data
+            data = request.body.decode('utf-8')  
             data_type = 'Plain Text'
         
         else:
-            data = request.body.decode('utf-8')  # Handle other types of data as raw bytes
+            data = request.body.decode('utf-8')  
             data_type = 'Raw Bytes'
 
-        # Save raw data and type to file
+        
         with open(LOG_FILE_PATH, 'a') as log_file:
             log_file.write(f"{datetime.now()} - Data Type: {data_type}, Data: {data}\n")
         
         logger.info(f'Received {data_type} data: {data}')
         
         if data_type == 'Form':
-            # Extract necessary fields from the data
+            
             action = data.get('action') or data.get('type')
             status = data.get('status')
             result = data.get('result', '')
@@ -99,14 +99,14 @@ def payment_callback(request):
             # recruitment_request = RecruitmentRequest.objects.get(order_id=order_id)
             
             
-                # Define a mapping of models
+            
             model_mapping = {
             'hire_request': HireRequest,
             'transfer_request': TransferRequest,
             'recruitment_request': RecruitmentRequest,
         }
 
-        # Attempt to find the request and model
+     
             request_obj = None
             request_model_name = None
 
@@ -123,7 +123,7 @@ def payment_callback(request):
             
             
         
-            # Create or update the Payment record
+            
             Payment.objects.update_or_create(
                 order_id=order_id,
                 defaults={

@@ -11,6 +11,6 @@ urlpatterns = [
     path('promotion-codes/', PromotionCodeCreateView.as_view(), name='promotion-code-list-create'),
     path('promotion-codes/<uuid:pk>/', PromotionCodeRetrieveUpdateDestroyView.as_view(), name='promotion-code-detail'),
    # path('custom-package/request-type/<uuid:request_type_id>', PackageByRequestTypeView.as_view(), name='packages-by-request-type'),
-    path('custom-package/request-type/<uuid:request_type_id>/', PackageByRequestTypeView.as_view(), name='packages-by-request-type'),
+    # path('custom-package/request-type/<uuid:request_type_id>/', PackageByRequestTypeView.as_view(), name='packages-by-request-type'),
 
 ]

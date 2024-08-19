@@ -101,6 +101,7 @@ ALLOWED_HOSTS = ['194.5.157.162','localhost','153.92.1.138','ofaq.ifuture.sa']
 
 INSTALLED_APPS = [
     'login',
+    # 'django_erd',
     'housekeeper',
     'nationality',
     'role',
@@ -179,7 +180,7 @@ CACHES = {
 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,

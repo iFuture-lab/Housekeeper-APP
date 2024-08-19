@@ -17,21 +17,21 @@ class PackageByRequestTypeView(generics.ListAPIView):
     serializer_class = CustomPackageSerializer
     
     def get_queryset(self):
+        # Get request_type_id from URL parameters
         request_type_id = self.kwargs.get('request_type_id')
-        # print(f"Received request_type_id: {request_type_id}")  # Debugging line
 
+        # Check if request_type_id is present
         if not request_type_id:
             return CustomPackage.objects.none()
 
+        # Validate request_type_id and retrieve ServiceType
         try:
             request_type = ServiceType.objects.get(id=request_type_id)
-            # print(f"Found ServiceType: {request_type}")  # Debugging line
         except ServiceType.DoesNotExist:
-            # print("ServiceType does not exist")  # Debugging line
             return CustomPackage.objects.none()
 
+        # Filter CustomPackage objects based on the request_type
         queryset = CustomPackage.objects.filter(request_type=request_type)
-        # print(f"Filtered queryset: {queryset}")  # Debugging line
         return queryset
     
     

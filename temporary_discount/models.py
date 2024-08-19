@@ -145,8 +145,7 @@ class PromotionCode(models.Model):
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     is_active = models.BooleanField(default=True)
-    deleted_at = models.DateTimeField(null=True, blank=True)
-    
+    deleted_at = models.DateTimeField(null=True, blank=True) 
     objects = SoftDeleteManager()  
     
     all_objects = models.Manager()  
