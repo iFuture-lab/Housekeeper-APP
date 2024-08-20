@@ -10,6 +10,7 @@ from django.db.models import IntegerField,Max
 from django.utils import timezone
 from login.models import CustomUser
 from django.core.exceptions import ValidationError
+from housekeeper.models import HireRequest,TransferRequest,RecruitmentRequest
 
 
 
@@ -40,9 +41,12 @@ class Contract(models.Model):
     request_type = models.ForeignKey(ServiceType,on_delete=models.CASCADE,null=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
     contract_file = models.TextField(null=True, blank=True)
+    hire_request = models.ForeignKey(HireRequest, on_delete=models.CASCADE, null=True, blank=True)
+    transfer_request = models.ForeignKey(TransferRequest, on_delete=models.CASCADE, null=True, blank=True)
+    recruitment_request= models.ForeignKey(RecruitmentRequest, on_delete=models.CASCADE, null=True, blank=True)
     
-    objects = SoftDeleteManager()  # Custom manager
-    all_objects = models.Manager()  # Default manager to access all records, including deleted
+    objects = SoftDeleteManager()  
+    all_objects = models.Manager()  
 
     def delete(self):
        #soft deleting

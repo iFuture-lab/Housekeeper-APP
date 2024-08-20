@@ -539,10 +539,10 @@ class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
             )
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Query the Housekeeper objects with the given IDs
+        
         housekeepers = HireRequest.objects.filter(id__in=uuid_list)
 
-        # Serialize the data
+        
         serializer = HireRequestSerializer(housekeepers, many=True)
         self.log_action(
         user=request.user if request.user.is_authenticated else None,
@@ -551,8 +551,7 @@ class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
         description=f"Successfully retrieved {len(housekeepers)} HireRequests for IDs: {uuid_list}"
     )
         
-        
-        # Return the serialized data
+       
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     @swagger_auto_schema(
@@ -896,7 +895,9 @@ class RecruitmentRequestBatchDetailView(ActionLoggingMixin,APIView):
 class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
     queryset = RecruitmentRequest.objects.all()
     serializer_class = RecruitmentRequestSerializer
-    permission_classes = [AllowAny] 
+    permission_classes = [AllowAny]
+    
+    
     
     def get(self, request, *args, **kwargs):
         # Log the action  
@@ -916,13 +917,13 @@ class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPI
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
     
-        # Log the action
-        user = request.user if request.user.is_authenticated else None
-        self.log_action(
-            user=user,
-            action_type="Created",
-            model_name="RecruitmentRequest"
-        )
+        # # Log the action
+        # user = request.user if request.user.is_authenticated else None
+        # self.log_action(
+        #     user=user,
+        #     action_type="Created",
+        #     model_name="RecruitmentRequest"
+        # )
         
         order_id = f"{serializer.instance.id}-{uuid.uuid4().hex[:8]}"
         serializer.instance.order_id = order_id

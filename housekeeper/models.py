@@ -36,6 +36,7 @@ class SoftDeleteManager(models.Manager):
 class ActionLog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    custom_user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
     action_type = models.CharField(max_length=255)
     description = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -43,7 +44,7 @@ class ActionLog(models.Model):
     
 
     def __str__(self):
-        return f"{self.timestamp} - {self.action_type} by {self.user}"
+        return f"{self.timestamp} - {self.action_type} by {self.user} or {self.custom_user}"
     
     objects = SoftDeleteManager()  # Custom manager
     all_objects = models.Manager()  # Default manager to access all records, including deleted
@@ -189,6 +190,11 @@ class Housekeeper(models.Model):
     def __str__(self):
         return self.name
     
+    def save(self, *args, **kwargs):
+        if Housekeeper.objects.filter(Name=self.Name).exists():
+            raise ValidationError(f'A housekeeper with the name "{self.Name}" already exists.')
+        super().save(*args, **kwargs)
+    
     
 
     
@@ -252,7 +258,7 @@ class HireRequest(models.Model):
     requester_city = models.CharField(max_length=100,null=True) 
     duration=models.IntegerField(default=1)
     total_price =models.FloatField(default=0.0)
-    status= models.ForeignKey(Status, on_delete=models.CASCADE)
+    status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
     temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE)
     custom_package_id = models.ForeignKey(CustomPackage, on_delete=models.CASCADE,null=True)
     request_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE,null=True,default=get_default_service_type)
@@ -331,9 +337,12 @@ class RecruitmentRequest(models.Model):
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
     requester_contact = models.CharField(max_length=100)
     visa_status= models.BooleanField(default=False)
-    request_date = models.DateField(default=get_current_date) 
+    request_date = models.DateField(default=get_current_date)
+    requester_firstName = models.CharField(max_length=100,) 
+    requester_lastName = models.CharField(max_length=100,)   
+    requester_city = models.CharField(max_length=100,)    
     #status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], default='Pending')
-    status= models.ForeignKey(Status, on_delete=models.CASCADE,default='Pending')  # Link to Status model
+    status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
     temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE)
     # pericepernationality_id = models.ForeignKey(PericePerNationality, on_delete=models.CASCADE,null=True)
     total_price =models.FloatField(default=0.0)
@@ -408,7 +417,7 @@ class TransferRequest(models.Model):
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
     request_date = models.DateField(default=get_current_date) 
     requester_contact = models.CharField(max_length=100,default='0123456789')
-    status= models.ForeignKey(Status, on_delete=models.CASCADE,default='Pending') 
+    status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
     requester_firstName = models.CharField(max_length=100,default='DefaultFirstName') 
     requester_lastName = models.CharField(max_length=100,default='DefaultLastName')   
     requester_city = models.CharField(max_length=100,null=True) 

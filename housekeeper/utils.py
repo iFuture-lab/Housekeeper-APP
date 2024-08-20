@@ -10,24 +10,54 @@ from TaqnyatSms import client
 from login.models import OtpMessage
 import json
 import time
+from django.contrib.auth import get_user_model
 
 
 
 class ActionLoggingMixin:
-    def log_action(self, user, action_type, model_name, instance_id=None, description=None):
-        if isinstance(user, AnonymousUser):
-            # Optionally, handle anonymous users differently, e.g., log a specific message or skip logging
-            user = None  # or set a default user or placeholder
-            description = description or f"{action_type} for {model_name} by anonymous"
-        else:
-            description = description or f"{action_type} for {model_name}"
+    
+    def log_action(self, user=None, custom_user=None, action_type=None, model_name=None, instance_id=None, description=None):
+        User = get_user_model()
 
+        # Determine which user model to use
+        if user and isinstance(user, User):
+            # Handle default or custom user model
+            action_log_user = user
+            action_log_custom_user = None
+        elif custom_user and isinstance(custom_user, CustomUser):
+            # Handle custom user model
+            action_log_user = None
+            action_log_custom_user = custom_user
+        else:
+            # If neither user is valid, set them to None
+            action_log_user = None
+            action_log_custom_user = None
+
+        # Set default description if not provided
+        description = description or f"{action_type} for {model_name}"
+
+        # Create the ActionLog entry
         ActionLog.objects.create(
-            user=user,
+            user=action_log_user,
+            custom_user=action_log_custom_user,
             action_type=action_type,
             description=description,
             timestamp=now()
         )
+    # def log_action(self, user, action_type, model_name,custom_user, instance_id=None, description=None):
+    #     if isinstance(user, AnonymousUser):
+    #         # Optionally, handle anonymous users differently, e.g., log a specific message or skip logging
+    #         user = None  # or set a default user or placeholder
+    #         description = description or f"{action_type} for {model_name} by anonymous"
+    #     else:
+    #         description = description or f"{action_type} for {model_name}"
+
+    #     ActionLog.objects.create(
+    #         user=user,
+    #         action_type=action_type,
+    #         description=description,
+    #         timestamp=now()
+    #     )
         
 def send_message(phone_number, request_details, test_mode=False):
     """
