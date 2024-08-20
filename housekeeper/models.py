@@ -394,7 +394,7 @@ class RecruitmentRequest(models.Model):
                     
                 )
                 self.custom_package_id= perice
-                self.total_price = self.duration * perice.final_price
+                self.total_price = perice.final_price
                 print("hiiiiiiiiiiiiiiiiiii")
                 # Apply discount if available
               
