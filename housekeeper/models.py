@@ -190,10 +190,10 @@ class Housekeeper(models.Model):
     def __str__(self):
         return self.name
     
-    def save(self, *args, **kwargs):
-        if Housekeeper.objects.filter(Name=self.Name).exists():
-            raise ValidationError(f'A housekeeper with the name "{self.Name}" already exists.')
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     if Housekeeper.objects.filter(Name=self.Name).exists():
+    #         raise ValidationError(f'A housekeeper with the name "{self.Name}" already exists.')
+    #     super().save(*args, **kwargs)
     
     
 
@@ -246,6 +246,9 @@ class HireRequest(models.Model):
     
     def get_default_service_type():
         return ServiceType.objects.get(name='Hire')  
+    
+    def get_default_status():
+        return Status.objects.get(Status='Pending')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     readonly_fields = ('pericepernationality_id',)
@@ -258,7 +261,8 @@ class HireRequest(models.Model):
     requester_city = models.CharField(max_length=100,null=True) 
     duration=models.IntegerField(default=1)
     total_price =models.FloatField(default=0.0)
-    status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
+    # status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
+    status = models.ForeignKey(Status, on_delete=models.CASCADE, default=get_default_status,blank=True)
     temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE)
     custom_package_id = models.ForeignKey(CustomPackage, on_delete=models.CASCADE,null=True)
     request_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE,null=True,default=get_default_service_type)
@@ -332,6 +336,9 @@ class RecruitmentRequest(models.Model):
     def get_current_date():
         return timezone.now().date()
     
+    def get_default_status():
+        return Status.objects.get(Status='Pending')
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='recruitment_requests')
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
@@ -342,7 +349,8 @@ class RecruitmentRequest(models.Model):
     requester_lastName = models.CharField(max_length=100,)   
     requester_city = models.CharField(max_length=100,)    
     #status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], default='Pending')
-    status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
+    # status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
+    status = models.ForeignKey(Status, on_delete=models.CASCADE, default=get_default_status,blank=True)
     temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE)
     # pericepernationality_id = models.ForeignKey(PericePerNationality, on_delete=models.CASCADE,null=True)
     total_price =models.FloatField(default=0.0)
@@ -412,12 +420,16 @@ class TransferRequest(models.Model):
     def get_current_date():
         return timezone.now().date()
     
+    def get_default_status():
+        return Status.objects.get(Status='Pending')
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='transfer_requests')
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
     request_date = models.DateField(default=get_current_date) 
     requester_contact = models.CharField(max_length=100,default='0123456789')
-    status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
+    # status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
+    status = models.ForeignKey(Status, on_delete=models.CASCADE, default=get_default_status,blank=True)
     requester_firstName = models.CharField(max_length=100,default='DefaultFirstName') 
     requester_lastName = models.CharField(max_length=100,default='DefaultLastName')   
     requester_city = models.CharField(max_length=100,null=True) 

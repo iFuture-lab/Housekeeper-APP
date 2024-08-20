@@ -86,6 +86,14 @@ class HousekeeperListView(APIView):
                 type=openapi.TYPE_STRING,
                 required=False
             ),
+            
+            openapi.Parameter(
+                'custom_package',
+                openapi.IN_QUERY,
+                description="Add custom Package to get the salary",
+                type=openapi.TYPE_STRING,
+                required=False
+            ),
         ],
         responses={
             200: openapi.Response(
@@ -106,8 +114,7 @@ class HousekeeperListView(APIView):
                             'worked_before': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                             'salary': openapi.Schema(type=openapi.TYPE_NUMBER),
                             'employment_type': openapi.Schema(type=openapi.TYPE_STRING),
-                            'monthly_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
-                            'pricePerMonth': openapi.Schema(type=openapi.TYPE_NUMBER),
+                            
                         }
                     )
                 )
@@ -160,12 +167,14 @@ class HousekeeperListView(APIView):
     # Filter by nationality_id
         if nationality_id:
             try:
-                nationality_uuid = uuid.UUID(nationality_id)
+                nationality_ids_list = nationality_id.split(',')
+                nationality_ids_list = [uuid.UUID(id) for id in nationality_ids_list]
                 housekeepers = housekeepers.filter(
-                nationality__id=nationality_uuid
+                nationality__id__in=nationality_ids_list
                 )
             except ValueError:
                 return Response({"error": "Invalid UUID in nationality_type parameter"}, status=status.HTTP_400_BAD_REQUEST)
+         
             
         if custom_package_id:
             try:
