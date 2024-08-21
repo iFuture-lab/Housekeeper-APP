@@ -870,10 +870,10 @@ class RecruitmentRequestBatchDetailView(ActionLoggingMixin,APIView):
     
     
     def delete(self, request, *args, **kwargs):
-        # Extract the 'ids' parameter from the query parameters
+       
         ids = request.query_params.get('ids', '')
 
-        # Split the 'ids' parameter by commas and convert to integers
+        
         try:
             # ids = list(map(int, ids.split(',')))
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
@@ -886,7 +886,7 @@ class RecruitmentRequestBatchDetailView(ActionLoggingMixin,APIView):
             )
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Delete the Housekeeper objects with the given IDs
+        
         count, _ = RecruitmentRequest.objects.filter(id__in=uuid_list).delete()
         self.log_action(
         user=request.user if request.user.is_authenticated else None,
@@ -905,8 +905,7 @@ class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPI
     queryset = RecruitmentRequest.objects.all()
     serializer_class = RecruitmentRequestSerializer
     permission_classes = [AllowAny]
-    
-    
+      
     
     def get(self, request, *args, **kwargs):
         # Log the action  
@@ -922,17 +921,15 @@ class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPI
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        # Create the recruitment request instance
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-    
-        # # Log the action
-        # user = request.user if request.user.is_authenticated else None
-        # self.log_action(
-        #     user=user,
-        #     action_type="Created",
-        #     model_name="RecruitmentRequest"
-        # )
+        
+        user = request.user if request.user.is_authenticated else None
+        self.log_action(
+            user=user,
+            action_type="Created",
+            model_name="RecruitmentRequest"
+        )
         
         order_id = f"{serializer.instance.id}-{uuid.uuid4().hex[:8]}"
         serializer.instance.order_id = order_id
@@ -953,28 +950,7 @@ class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPI
         'request_details': request_details  # Include all request details in the response
         }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
         
-    #     test_mode = request.data.get('test_mode', False)
-    #     # Retrieve request details
-    #     request_details = {
-    #         'housekeeper': serializer.validated_data.get('housekeeper'),
-    #         'requester':serializer.validated_data.get('requester'),
-    #         'requester_contact': serializer.validated_data.get('requester_contact'),
-    #         'request_date': serializer.validated_data.get('request_date'),
-    #         'visa_status':serializer.validated_data.get('visa_status'),
-    #         'status': serializer.validated_data.get('status'),
-    #     }
-        
-    #     # Send notification to the requester with request details
-    #     phone_number = serializer.validated_data.get('requester_contact')
-    #     send_message(phone_number, request_details,test_mode=test_mode)
-    #     print(send_message)
-        
-    #     success, message = send_message(phone_number, request_details, test_mode=test_mode)
     
-    #     return Response({
-    #     'message': message
-    # }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
-
      
 
 
@@ -1018,7 +994,7 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
         description=f"Patch request with IDs: {ids} and new status: {new_status_name}"
     )
 
-        # Split the 'ids' parameter by commas and convert to integers
+        
         try:
             # ids = list(map(int, ids.split(',')))
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
@@ -1034,7 +1010,7 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
         if not new_status_name:
             return Response({"error": "Status value is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Fetch the Status object based on the provided status name
+       
         try:
             new_status = Status.objects.get(Status=new_status_name)
         except Status.DoesNotExist:
@@ -1046,7 +1022,7 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
         )
             return Response({"error": f"Status '{new_status_name}' does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Query the Housekeeper objects with the given IDs
+        
         Recruitment = RecruitmentRequest.objects.filter(id__in=uuid_list)
 
         if not Recruitment.exists():
@@ -1058,7 +1034,7 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
         )
             return Response({"error": "No Recruitment Requests found for the provided IDs."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Update the status field for the queried Housekeeper objects
+        
         Recruitment.update(status=new_status)
         
         self.log_action(
@@ -1070,7 +1046,7 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
         
         for hire_request in Recruitment:
             hire_request.status = new_status
-            hire_request.save()  # Save to trigger the update
+            hire_request.save()  
 
             if new_status.Status == "Approved":
                 housekeeper = hire_request.housekeeper
@@ -1114,10 +1090,10 @@ class TransferRequestBatchDetailView(ActionLoggingMixin,APIView):
     )
     
     def get(self, request, *args, **kwargs):
-        # Extract the 'ids' parameter from the query parameters
+        
         ids = request.query_params.get('ids', '')
 
-        # Split the 'ids' parameter by commas and convert to integers
+        
         try:
             # ids = list(map(int, ids.split(',')))
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
@@ -1130,10 +1106,10 @@ class TransferRequestBatchDetailView(ActionLoggingMixin,APIView):
         )
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Query the Housekeeper objects with the given IDs
+        
         housekeepers = TransferRequest.objects.filter(id__in=uuid_list)
 
-        # Serialize the data
+       
         serializer = TransferRequestSerializer(housekeepers, many=True)
         self.log_action(
             user=request.user if request.user.is_authenticated else None,
@@ -1143,7 +1119,7 @@ class TransferRequestBatchDetailView(ActionLoggingMixin,APIView):
         )
         
         
-        # Return the serialized data
+       
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
@@ -1160,10 +1136,10 @@ class TransferRequestBatchDetailView(ActionLoggingMixin,APIView):
     
     
     def delete(self, request, *args, **kwargs):
-        # Extract the 'ids' parameter from the query parameters
+        
         ids = request.query_params.get('ids', '')
 
-        # Split the 'ids' parameter by commas and convert to integers
+      
         try:
             # ids = list(map(int, ids.split(',')))
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
@@ -1177,7 +1153,7 @@ class TransferRequestBatchDetailView(ActionLoggingMixin,APIView):
            
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Delete the Housekeeper objects with the given IDs
+        
         count, _ = TransferRequest.objects.filter(id__in=uuid_list).delete()
         
         self.log_action(
@@ -1187,7 +1163,7 @@ class TransferRequestBatchDetailView(ActionLoggingMixin,APIView):
         description=f"Successfully deleted {count} TransferRequest for IDs: {ids}"
     )
 
-        # Return the count of deleted objects
+        
         return Response({"deleted": count}, status=status.HTTP_204_NO_CONTENT)
     
     
@@ -1199,7 +1175,7 @@ class TransferRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIVie
     permission_classes = [AllowAny] 
     
     def get(self, request, *args, **kwargs):
-        # Log the action  
+        
         user = request.user if request.user.is_authenticated else None
         self.log_action(
             user=user,
@@ -1215,7 +1191,7 @@ class TransferRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIVie
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
     
-        # Log the action
+        
         user = request.user if request.user.is_authenticated else None
         self.log_action(
             user=user,
@@ -1242,26 +1218,6 @@ class TransferRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIVie
         'request_details': request_details  # Include all request details in the response
         }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
         
-    #     test_mode = request.data.get('test_mode', False)
-    #     # Retrieve request details
-    #     request_details = {
-    #         'housekeeper': serializer.validated_data.get('housekeeper'),
-    #         'requester':serializer.validated_data.get('requester'),
-    #         'requester_contact': serializer.validated_data.get('requester_contact'),
-    #          'request_date': serializer.validated_data.get('request_date'),
-    #         'status': serializer.validated_data.get('status'),
-    #     }
-        
-    #     # Send notification to the requester with request details
-    #     phone_number = serializer.validated_data.get('requester_contact')
-    #     send_message(phone_number, request_details,test_mode=test_mode)
-    #     print(send_message)
-        
-    #     success, message = send_message(phone_number, request_details, test_mode=test_mode)
-    
-    #     return Response({
-    #     'message': message
-    # }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
 
     
 
@@ -1294,7 +1250,7 @@ class TransferBatchStatusUpdateView(ActionLoggingMixin,APIView):
     
     @transaction.atomic
     def patch(self, request, *args, **kwargs):
-        # Extract the 'ids' and 'status' parameters from the query parameters
+        
         ids = request.query_params.get('ids', '')
         new_status_name = request.query_params.get('status', '')
         
@@ -1305,7 +1261,7 @@ class TransferBatchStatusUpdateView(ActionLoggingMixin,APIView):
         description=f"Patch request with IDs: {ids} and new status: {new_status_name}"
     )
 
-        # Split the 'ids' parameter by commas and convert to integers
+       
         try:
             # ids = list(map(int, ids.split(',')))
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
@@ -1321,7 +1277,7 @@ class TransferBatchStatusUpdateView(ActionLoggingMixin,APIView):
         if not new_status_name:
             return Response({"error": "Status value is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Fetch the Status object based on the provided status name
+        
         try:
             new_status = Status.objects.get(Status=new_status_name)
         except Status.DoesNotExist:
@@ -1333,7 +1289,7 @@ class TransferBatchStatusUpdateView(ActionLoggingMixin,APIView):
         )
             return Response({"error": f"Status '{new_status_name}' does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Query the Housekeeper objects with the given IDs
+        
         Transfer = TransferRequest.objects.filter(id__in=uuid_list)
 
         if not Transfer.exists():
@@ -1345,7 +1301,7 @@ class TransferBatchStatusUpdateView(ActionLoggingMixin,APIView):
         )
             return Response({"error": "No Transfer Requests found for the provided IDs."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Update the status field for the queried Housekeeper objects
+        
         Transfer.update(status=new_status)
         self.log_action(
         user=request.user if request.user.is_authenticated else None,
@@ -1356,7 +1312,7 @@ class TransferBatchStatusUpdateView(ActionLoggingMixin,APIView):
         
         for hire_request in Transfer:
             hire_request.status = new_status
-            hire_request.save()  # Save to trigger the update
+            hire_request.save()  
 
             if new_status.Status == "Approved":
                 housekeeper = hire_request.housekeeper

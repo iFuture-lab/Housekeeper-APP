@@ -7,10 +7,15 @@ from nationality.models import Nationallity
         
 
 class DiscountSerializer(serializers.ModelSerializer):
-    price_per_nationality = serializers.UUIDField() 
+    # price_per_nationality = serializers.UUIDField() 
     class Meta:
         model = TempoararyDiscount
         fields = '__all__'
+        
+        
+    # def to_representation(self, instance):
+    #     representation = super().to_representation(instance)
+    #     representation.pop('deleted_at', None)
         
         
 class PromotionCodeSerializer(serializers.ModelSerializer):
@@ -18,6 +23,11 @@ class PromotionCodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = PromotionCode
         fields = '__all__'
+        
+        
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation.pop('deleted_at', None)
         
         
 class CustomPackageSerializer(serializers.ModelSerializer):
@@ -30,6 +40,11 @@ class CustomPackageSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomPackage
         fields = '__all__'
+        
+        
+    # def to_representation(self, instance):
+    #     representation = super().to_representation(instance)
+    #     representation.pop('deleted_at', None)
 
     def get_old_price(self, obj):
         # Return the original price without any discounts

@@ -129,6 +129,11 @@ class RegisterSerializercustomer(serializers.ModelSerializer):
             email=validated_data['email'],
         )
         return user
+    
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation.pop('deleted_at', None)
 
 
 
@@ -158,6 +163,12 @@ class LoginSerializercustomer(serializers.Serializer):
     
     class Meta:
         ref_name = 'LoginSerializercustomer'  # Explicitly set ref_name
+        
+        
+        
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation.pop('deleted_at', None)
         
         
         
@@ -192,6 +203,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.save()
         return user
     
+    
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation.pop('deleted_at', None)
+    
 
 
 class LoginSerializer(serializers.Serializer):
@@ -222,3 +239,8 @@ class LoginSerializer(serializers.Serializer):
     
     class Meta:
         ref_name = 'LoginSerializer'  
+        
+        
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation.pop('deleted_at', None)

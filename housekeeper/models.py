@@ -256,10 +256,10 @@ class HireRequest(models.Model):
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
     requester_contact = models.CharField(max_length=100)
     request_date = models.DateField(default=get_current_date)
-    requester_firstName = models.CharField(max_length=100,default='DefaultFirstName') 
-    requester_lastName = models.CharField(max_length=100,default='DefaultLastName')   
-    requester_city = models.CharField(max_length=100,null=True) 
-    duration=models.IntegerField(default=1)
+    requester_firstName = models.CharField(max_length=100,) 
+    requester_lastName = models.CharField(max_length=100,)   
+    requester_city = models.CharField(max_length=100,) 
+    duration=models.IntegerField()
     total_price =models.FloatField(default=0.0)
     # status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
     status = models.ForeignKey(Status, on_delete=models.CASCADE, default=get_default_status,blank=True)
@@ -341,7 +341,7 @@ class RecruitmentRequest(models.Model):
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='recruitment_requests')
-    requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
+    requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  
     requester_contact = models.CharField(max_length=100)
     visa_status= models.BooleanField(default=False)
     request_date = models.DateField(default=get_current_date)
@@ -359,9 +359,9 @@ class RecruitmentRequest(models.Model):
     order_id = models.CharField(max_length=255, unique=True, blank=True, null=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
     
-    objects = SoftDeleteManager()  # Custom manager
-    all_objects = models.Manager()  # Default manager to access all records, including deleted
-
+    objects = SoftDeleteManager()  
+    all_objects = models.Manager()  
+    
     def delete(self):
        #soft deleting
         self.deleted_at = timezone.now()
@@ -427,12 +427,12 @@ class TransferRequest(models.Model):
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='transfer_requests')
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
     request_date = models.DateField(default=get_current_date) 
-    requester_contact = models.CharField(max_length=100,default='0123456789')
+    requester_contact = models.CharField(max_length=100)
     # status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
     status = models.ForeignKey(Status, on_delete=models.CASCADE, default=get_default_status,blank=True)
-    requester_firstName = models.CharField(max_length=100,default='DefaultFirstName') 
-    requester_lastName = models.CharField(max_length=100,default='DefaultLastName')   
-    requester_city = models.CharField(max_length=100,null=True) 
+    requester_firstName = models.CharField(max_length=100,) 
+    requester_lastName = models.CharField(max_length=100,)   
+    requester_city = models.CharField(max_length=100,) 
     temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE)
     # pericepernationality_id = models.ForeignKey(PericePerNationality, on_delete=models.CASCADE,null=True)
     # service_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE,null=True,default=get_default_service_type)

@@ -37,20 +37,19 @@ from django.contrib.auth import views as auth_views
 
 
 
-
-
-schema_view  = get_schema_view(
+schema_view = get_schema_view(
     openapi.Info(
         title="Your API",
         default_version='v1',
-        description="APIs for user login",   
-        terms_of_service="https://www.example.com/terms/",  # Placeholder URL
+        description="APIs for Houskeeper",
+        terms_of_service="https://www.google.com/policies/terms/",
         contact=openapi.Contact(email="jenansol@hotmail.com"),
         license=openapi.License(name="BSD License"),
     ),
     public=True,
     permission_classes=(AllowAny,),
 )
+
    
    
 
@@ -69,11 +68,12 @@ urlpatterns = [
     path('api/', include('payment.urls')), 
     path('api/', include('role.urls')), 
     path('api/', include('contract.urls')), 
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'), 
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
     path('password-reset-complete/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
-    # Swagger UI endpoint
-    #path('swagger/register/', schema_view_v2, name='swagger-ui-v2'),  # Swagger UI endpoint
+    
+    #path('swagger/register/', schema_view_v2, name='swagger-ui-v2'),  
 ]
 

@@ -93,11 +93,15 @@ class HousekeeperSerializer(serializers.ModelSerializer):
     def get_salary(self, obj):
         custom_package = self.context.get('custom_package')
         if custom_package:
+            print("hhhhhhhhhhhhhhhhhhhhhhhhhh")
             if obj.worked_before:
+                print("jennnnnnnnnnnnnnnnnn")
                 return custom_package.worked_before_salary
             else:
+                print("hhhhhhhhhhhhhhhh")
                 return custom_package.new_housekeeper_salary
-        return None
+       
+        return 0
     
     
     def to_representation(self, instance):
