@@ -657,7 +657,7 @@ class HireRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
         request_details['order_id'] = order_id  # Add the order_id to the details
     
     # Send notification to the requester with request details
-        phone_number = serializer.validated_data.get('requester_contact')
+        phone_number = serializer.validated_data.get('request_contact')
         test_mode = request.data.get('test_mode', False)
         success, message = send_message(phone_number, request_details, test_mode=test_mode)
     
@@ -941,7 +941,7 @@ class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPI
         request_details = recruitment_request_serializer.data.copy()  
         request_details['order_id'] = order_id 
     
-        phone_number = serializer.validated_data.get('requester_contact')
+        phone_number = serializer.validated_data.get('request_contact')
         test_mode = request.data.get('test_mode', False)
         success, message = send_message(phone_number, request_details, test_mode=test_mode)
     
@@ -1210,12 +1210,13 @@ class TransferRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIVie
         request_details['order_id'] = order_id 
     
         phone_number = serializer.validated_data.get('request_contact')
+        
         test_mode = request.data.get('test_mode', False)
         success, message = send_message(phone_number, request_details, test_mode=test_mode)
     
         return Response({
         'message': message,
-        'request_details': request_details  # Include all request details in the response
+        'request_details': request_details  
         }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
         
 

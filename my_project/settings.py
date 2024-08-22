@@ -128,9 +128,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'drf_yasg',
     'corsheaders',
-    
-
+    'channels',
 ]
+
+
+ASGI_APPLICATION = 'my_project.asgi.application'
 
 SITE_ID = 1
 

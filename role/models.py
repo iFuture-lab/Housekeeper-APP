@@ -24,7 +24,7 @@ class SoftDeleteManager(models.Manager):
 
 class Permission(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=100, unique=True)  # e.g., "can_delete_role"
+    name = models.CharField(max_length=100, unique=True)  
     deleted_at = models.DateTimeField(null=True, blank=True)
     
     objects = SoftDeleteManager()  
