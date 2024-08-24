@@ -34,7 +34,10 @@ from .serializer import CombinedRequestsSerializer
 
 
 class CombinedRequestsByRequester(APIView):
+    
+    serializer_class= CombinedRequestsSerializer
     permission_classes = [AllowAny]
+    
 
     def get(self, request):
         requester_id = request.query_params.get('requester_id', None)
@@ -544,6 +547,7 @@ class HousekeeperListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
             queryset = queryset.order_by(sort_by)
 
         return queryset
+    
 
     
     

@@ -9,20 +9,26 @@ from decimal import Decimal
 from service_type.models import ServiceType
 
 from login.models import CustomUser
+from .religion_view import ReligionSerializer
+from .employment_type_view import EmploymentTypeSerializer
+from service_type.serializers import ServiceTypeSerializer
+from .models import HousekeeperRequestType
 
+
+
+
+class HousekeeperRequestTypeSerializer(serializers.ModelSerializer):
+    request_type = ServiceTypeSerializer()
+
+    class Meta:
+        model = HousekeeperRequestType
+        fields = ['id', 'request_type']
 
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = '__all__'
 
-
-
-
-
-
-    
-    
     
 
 class ActionLogSerializer(serializers.ModelSerializer):
@@ -96,12 +102,24 @@ class DummyRecruitmentRequestSerializer(serializers.ModelSerializer):
 
 class HousekeeperSerializer(serializers.ModelSerializer):
     # nationality = serializers.PrimaryKeyRelatedField(queryset=Nationallity.objects.all())
+    
+    religion = ReligionSerializer()
+    employment_type = EmploymentTypeSerializer()
+    nationality = NationalitySerializer()
+    # request_types = ServiceTypeSerializer(many=True)
+    #requests_types = HousekeeperRequestTypeSerializer(source='housekeeperrequesttype_set', many=True)
     salary = serializers.SerializerMethodField()
+    requests_types= serializers.SerializerMethodField()
+    
    
     request_types = serializers.PrimaryKeyRelatedField(
         queryset=ServiceType.objects.all(),
         many=True
     )
+    
+    
+    def get_requests_types(self, obj):
+        return ServiceTypeSerializer(obj.request_types.all(), many=True).data
   
     class Meta:
         model = Housekeeper
@@ -158,6 +176,7 @@ class HousekeeperSerializer(serializers.ModelSerializer):
     
 
 class HireRequestSerializer(serializers.ModelSerializer):
+    employment_type = serializers.SerializerMethodField()
     
     # requester = serializers.UUIDField(read_only=True)
     # requester = CustomUserSerializer(read_only=True)
@@ -187,6 +206,9 @@ class HireRequestSerializer(serializers.ModelSerializer):
         representation.pop('temporary_discount', None)
     
         return representation
+    
+    def get_employment_type(self, obj):
+        return obj.housekeeper.employment_type.name if obj.housekeeper and obj.housekeeper.employment_type else None
         
         
     # def get_old_price(self, obj):
@@ -233,6 +255,7 @@ class RecruitmentRequestSerializer(serializers.ModelSerializer):
     # has_discount = serializers.SerializerMethodField()
     # requester = serializers.UUIDField(read_only=True)
     # requester = CustomUserSerializer(read_only=True)
+    employment_type = serializers.SerializerMethodField()
     class Meta:
         model = RecruitmentRequest
         fields = '__all__'
@@ -254,6 +277,10 @@ class RecruitmentRequestSerializer(serializers.ModelSerializer):
         representation.pop('temporary_discount', None)
     
         return representation
+    
+    
+    def get_employment_type(self, obj):
+        return obj.housekeeper.employment_type.name if obj.housekeeper and obj.housekeeper.employment_type else None
         
     # def get_old_price(self, obj):
     #     # Return the original price without any discounts
@@ -290,6 +317,7 @@ class TransferRequestSerializer(serializers.ModelSerializer):
     # new_price = serializers.SerializerMethodField()
     # has_discount = serializers.SerializerMethodField()
     # status = StatusSerializer()
+    employment_type = serializers.SerializerMethodField()
     class Meta:
         model = TransferRequest
         fields = '__all__'
@@ -311,6 +339,10 @@ class TransferRequestSerializer(serializers.ModelSerializer):
         representation.pop('temporary_discount', None)
     
         return representation
+    
+    
+    def get_employment_type(self, obj):
+        return obj.housekeeper.employment_type.name if obj.housekeeper and obj.housekeeper.employment_type else None
         
     # def get_old_price(self, obj):
     #     # Return the original price without any discounts

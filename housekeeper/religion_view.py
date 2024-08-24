@@ -2,7 +2,6 @@ from rest_framework import serializers
 from .models import Religion
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
-from .serializer import StatusSerializer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework import generics

@@ -3,7 +3,9 @@ from .models import TempoararyDiscount,PromotionCode,CustomPackage
 from django.utils import timezone
 from decimal import Decimal
 from nationality.models import Nationallity
-
+from housekeeper.employment_type_view import EmploymentTypeSerializer
+from service_type.serializers import ServiceTypeSerializer
+from nationality.serializers import NationalitySerializer
         
 
 class DiscountSerializer(serializers.ModelSerializer):
@@ -31,9 +33,18 @@ class PromotionCodeSerializer(serializers.ModelSerializer):
         
         
 class CustomPackageSerializer(serializers.ModelSerializer):
+    employment_type = EmploymentTypeSerializer()
+    request_type = ServiceTypeSerializer()
+    nationalities_types= serializers.SerializerMethodField()
+    
+    def get_nationalities_types(self, obj):
+        return NationalitySerializer(obj.nationallities.all(), many=True).data
+  
+    
     old_price = serializers.SerializerMethodField()
     new_price = serializers.SerializerMethodField()
     has_discount = serializers.SerializerMethodField()
+    
     
     nationallities = serializers.PrimaryKeyRelatedField(queryset=Nationallity.objects.all(), many=True)
 
