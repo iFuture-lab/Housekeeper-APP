@@ -10,7 +10,7 @@ from .views import (
    
 )
 from .views import HousekeeperIDsView,AvailableHousekeeper,TransferBatchStatusUpdateView,RecruitmentBatchStatusUpdateView,HireRequestListView,TransferRequestListView,HousekeeperListView,HousekeeperFilterView
-from.views import HousekeeperBatchDetailView,HireHousekeeperBatchDetailView,RecruitmentRequestBatchDetailView,TransferRequestBatchDetailView,HousekeeperBatchStatusUpdateView,RecruitmentListView
+from.views import HousekeeperBatchDetailView,HireHousekeeperBatchDetailView,RecruitmentRequestBatchDetailView,TransferRequestBatchDetailView,HousekeeperBatchStatusUpdateView,RecruitmentListView,CombinedRequestsByRequester
 from .status_view import StatusCreateView,StatusDetailView,StatusBatchDetailView
 from .religion_view import ReligionCreateView, ReligionBatchDetailView,ReligionDetailView
 from .employment_type_view import EmploymentTypeCreateView, EmploymentTypeBatchDetailView,EmploymentTypeDetailView
@@ -65,6 +65,8 @@ urlpatterns = [
     path('employment-type/',EmploymentTypeCreateView.as_view(), name='employement-type-create'),
     path('employment-type/<uuid:pk>/',EmploymentTypeDetailView.as_view(), name='employement-type-detail'),
     path('employment-type/batch/',EmploymentTypeBatchDetailView.as_view(), name='employement-type-batch'),
+    
+    path('requests/', CombinedRequestsByRequester.as_view(), name='combined-requests-by-requester'),
     # path('action-log', include(router.urls)),
     
     

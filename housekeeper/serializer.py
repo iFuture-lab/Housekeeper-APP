@@ -8,6 +8,23 @@ from django.utils import timezone
 from decimal import Decimal
 from service_type.models import ServiceType
 
+from login.models import CustomUser
+
+
+class CustomUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = '__all__'
+
+
+
+
+
+
+    
+    
+    
+
 class ActionLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = ActionLog
@@ -141,6 +158,10 @@ class HousekeeperSerializer(serializers.ModelSerializer):
     
 
 class HireRequestSerializer(serializers.ModelSerializer):
+    
+    # requester = serializers.UUIDField(read_only=True)
+    # requester = CustomUserSerializer(read_only=True)
+    
     # old_price = serializers.SerializerMethodField()
     # new_price = serializers.SerializerMethodField()
     # has_discount = serializers.SerializerMethodField()
@@ -210,6 +231,8 @@ class RecruitmentRequestSerializer(serializers.ModelSerializer):
     # old_price = serializers.SerializerMethodField()
     # new_price = serializers.SerializerMethodField()
     # has_discount = serializers.SerializerMethodField()
+    # requester = serializers.UUIDField(read_only=True)
+    # requester = CustomUserSerializer(read_only=True)
     class Meta:
         model = RecruitmentRequest
         fields = '__all__'
@@ -261,6 +284,8 @@ class RecruitmentRequestSerializer(serializers.ModelSerializer):
     
 
 class TransferRequestSerializer(serializers.ModelSerializer):
+    #requester = CustomUserSerializer(read_only=True)
+    # requester = serializers.UUIDField(read_only=True)
     # old_price = serializers.SerializerMethodField()
     # new_price = serializers.SerializerMethodField()
     # has_discount = serializers.SerializerMethodField()
@@ -315,3 +340,11 @@ class TransferRequestSerializer(serializers.ModelSerializer):
         
 class HousekeeperIDSerializer(serializers.Serializer):
     id = serializers.IntegerField()
+    
+    
+class CombinedRequestsSerializer(serializers.Serializer):
+   
+    requests = serializers.DictField(child=serializers.ListSerializer(child=serializers.DictField()))
+    # hire_requests = serializers.ListSerializer(child=HireRequestSerializer())
+    # recruitment_requests = serializers.ListSerializer(child=RecruitmentRequestSerializer())
+    # transfer_requests = serializers.ListSerializer(child=TransferRequestSerializer())

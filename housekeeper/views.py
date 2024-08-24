@@ -29,8 +29,76 @@ from role.permissions import HasPermission
 from django.conf import settings
 from django.http import HttpResponse
 import os
+from .serializer import CombinedRequestsSerializer
 
 
+
+class CombinedRequestsByRequester(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        requester_id = request.query_params.get('requester_id', None)
+
+        if requester_id is None:
+            return Response({'error': 'requester_id query parameter is required'}, status=400)
+
+        try:
+            requester_uuid = UUID(requester_id)
+        except ValueError:
+            return Response({'error': 'Invalid UUID format'}, status=400)
+
+        hire_requests = HireRequest.objects.filter(requester=requester_uuid)
+        recruitment_requests = RecruitmentRequest.objects.filter(requester=requester_uuid)
+        transfer_requests = TransferRequest.objects.filter(requester=requester_uuid)
+
+        hire_requests_data = HireRequestSerializer(hire_requests, many=True).data
+        recruitment_requests_data = RecruitmentRequestSerializer(recruitment_requests, many=True).data
+        transfer_requests_data = TransferRequestSerializer(transfer_requests, many=True).data
+
+        # Combine all requests into a single list
+        combined_requests = hire_requests_data + recruitment_requests_data + transfer_requests_data
+
+        data = {
+            'requests': combined_requests
+        }
+
+        return Response(data)
+
+
+
+# class CombinedRequestsByRequester(APIView):
+#     permission_classes = [AllowAny]
+
+#     def get_queryset(self, model_class, requester_id):
+#         return model_class.objects.filter(requester_id=requester_id)
+
+#     def get(self, request):
+#         requester_id = request.query_params.get('requester_id', None)
+
+#         if requester_id is None:
+#             return Response({'error': 'requester_id query parameter is required'}, status=400)
+
+#         try:
+#             requester_uuid = UUID(requester_id)
+#         except ValueError:
+#             return Response({'error': 'Invalid UUID format'}, status=400)
+
+#         hire_requests = self.get_queryset(HireRequest, requester_uuid)
+#         recruitment_requests = self.get_queryset(RecruitmentRequest, requester_uuid)
+#         transfer_requests = self.get_queryset(TransferRequest, requester_uuid)
+
+#         data = {
+#             'requests': {
+#                 'hire_requests': HireRequestSerializer(hire_requests, many=True).data,
+#                 'recruitment_requests': RecruitmentRequestSerializer(recruitment_requests, many=True).data,
+#                 'transfer_requests': TransferRequestSerializer(transfer_requests, many=True).data,
+#             }
+#         }
+
+#         return Response(data)
+
+    
+      
 
 
 

@@ -14,9 +14,9 @@ class NationalitySerializer(serializers.ModelSerializer):
         
         
         
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation.pop('deleted_at', None)
+    # def to_representation(self, instance):
+    #     representation = super().to_representation(instance)
+    #     representation.pop('deleted_at', None)
         
         
 
