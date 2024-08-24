@@ -609,6 +609,14 @@ class HireRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
     serializer_class = HireRequestSerializer
     permission_classes = [AllowAny] 
     
+    def get_queryset(self):
+        queryset = HireRequest.objects.all()
+        client = self.request.query_params.get('client', None)
+        if client is not None:
+            print("hiiiiiiiiiiiii")
+            queryset = queryset.filter(requester_id=client)
+        return queryset
+    
     def check_template_path(request):
         template_name = 'contract_Recruitment.docx'
         template_path = os.path.join(settings.BASE_DIR, 'templates', template_name)
@@ -905,6 +913,15 @@ class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPI
     queryset = RecruitmentRequest.objects.all()
     serializer_class = RecruitmentRequestSerializer
     permission_classes = [AllowAny]
+    
+    
+    def get_queryset(self):
+        queryset = RecruitmentRequest.objects.all()
+        client = self.request.query_params.get('client', None)
+        if client is not None:
+            print("hiiiiiiiiiiiii")
+            queryset = queryset.filter(requester_id=client)
+        return queryset
       
     
     def get(self, request, *args, **kwargs):
@@ -1173,6 +1190,15 @@ class TransferRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIVie
     queryset = TransferRequest.objects.all()
     serializer_class = TransferRequestSerializer
     permission_classes = [AllowAny] 
+    
+    
+    def get_queryset(self):
+        queryset = TransferRequest.objects.all()
+        client = self.request.query_params.get('client', None)
+        if client is not None:
+            print("hiiiiiiiiiiiii")
+            queryset = queryset.filter(requester_id=client)
+        return queryset
     
     def get(self, request, *args, **kwargs):
         
