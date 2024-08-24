@@ -14,13 +14,26 @@ from uuid import UUID
 class NationalityCreateView(generics.ListCreateAPIView):
     queryset = Nationallity.objects.all()
     serializer_class = NationalitySerializer
-    permission_classes = [AllowAny] 
+    permission_classes = [AllowAny]
+
+    def perform_create(self, serializer):
+        base64_image = self.request.data.get('image', None)
+        nationality = serializer.save()
+        if base64_image:
+            nationality.save_image_from_base64(base64_image, nationality.Nationality)
+            nationality.save()
 
 class NationalityRequestDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Nationallity.objects.all()
     serializer_class = NationalitySerializer
-    permission_classes = [AllowAny] 
-    
+    permission_classes = [AllowAny]
+
+    def perform_update(self, serializer):
+        base64_image = self.request.data.get('image', None)
+        nationality = serializer.save()
+        if base64_image:
+            nationality.save_image_from_base64(base64_image, nationality.Nationality)
+            nationality.save()
     
     
 ################# Get manay & delete manay ################################
