@@ -61,7 +61,7 @@ class ContractCreateView(generics.CreateAPIView):
         print("'''''''''''''''''",request_type)
         print("Request Type Attributes:", dir(request_type))
     
-    # Attempt to retrieve possible name attributes
+    
         request_type_name = getattr(request_type, 'name', None)
         print("Request Type Name:", request_type_name)
         if request_type:
@@ -88,11 +88,11 @@ class ContractCreateView(generics.CreateAPIView):
                 # contract.status = 'Completed'
                 # contract.save()
                 
-                # Update the status first
+                
                 contract.status = 'Completed'
                 contract.save(update_fields=['status'])
             
-            # Then generate the contract
+            
                 encoded_contract = self.generate_contract(contract)
                 contract.contract_file = encoded_contract
                 contract.save(update_fields=['contract_file'])

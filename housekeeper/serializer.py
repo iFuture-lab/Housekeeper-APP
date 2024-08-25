@@ -83,22 +83,22 @@ class DeleteTransferRequest(serializers.ModelSerializer):
 class DummyHousekeeperSerializer(serializers.ModelSerializer):
     class Meta:
         model = Housekeeper
-        fields = ['id']  # Add fields as needed
+        fields = ['id']  
         
 class DummyHireHousekeeperSerializer(serializers.ModelSerializer):
     class Meta:
         model = HireRequest
-        fields = ['id']  # Add fields as needed
+        fields = ['id']  
         
 class DummyTransferRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = TransferRequest
-        fields = ['id']  # Add fields as needed
+        fields = ['id']  
         
 class DummyRecruitmentRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecruitmentRequest
-        fields = ['id']  # Add fields as needed
+        fields = ['id']  
 
 class HousekeeperSerializer(serializers.ModelSerializer):
     # nationality = serializers.PrimaryKeyRelatedField(queryset=Nationallity.objects.all())
@@ -177,11 +177,17 @@ class HousekeeperSerializer(serializers.ModelSerializer):
 
 class HireRequestSerializer(serializers.ModelSerializer):
     employment_type = serializers.SerializerMethodField()
+    housekeeper = HousekeeperSerializer()
+    request_type = ServiceTypeSerializer()
+    status=StatusSerializer()
+    
+    
+    
     
     # requester = serializers.UUIDField(read_only=True)
     # requester = CustomUserSerializer(read_only=True)
     
-    # old_price = serializers.SerializerMethodField()
+    # old_price = serializers.SerializerMethodField()   
     # new_price = serializers.SerializerMethodField()
     # has_discount = serializers.SerializerMethodField()
     
@@ -256,6 +262,10 @@ class RecruitmentRequestSerializer(serializers.ModelSerializer):
     # requester = serializers.UUIDField(read_only=True)
     # requester = CustomUserSerializer(read_only=True)
     employment_type = serializers.SerializerMethodField()
+    housekeeper = HousekeeperSerializer()
+    request_type = ServiceTypeSerializer()
+    status=StatusSerializer()
+    
     class Meta:
         model = RecruitmentRequest
         fields = '__all__'
@@ -317,6 +327,11 @@ class TransferRequestSerializer(serializers.ModelSerializer):
     # new_price = serializers.SerializerMethodField()
     # has_discount = serializers.SerializerMethodField()
     # status = StatusSerializer()
+    
+    housekeeper = HousekeeperSerializer()
+    request_type = ServiceTypeSerializer()
+    status=StatusSerializer()
+    
     employment_type = serializers.SerializerMethodField()
     class Meta:
         model = TransferRequest
