@@ -10,30 +10,40 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from uuid import UUID
+from django.db import IntegrityError
 
 class NationalityCreateView(generics.ListCreateAPIView):
     queryset = Nationallity.objects.all()
     serializer_class = NationalitySerializer
     permission_classes = [AllowAny]
+    
+    
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        except IntegrityError:
+            
+            return Response({"Nationality": "This nationality already exists."}, status=status.HTTP_400_BAD_REQUEST)
 
-    def perform_create(self, serializer):
-        base64_image = self.request.data.get('image', None)
-        nationality = serializer.save()
-        if base64_image:
-            nationality.save_image_from_base64(base64_image, nationality.Nationality)
-            nationality.save()
+   
 
 class NationalityRequestDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Nationallity.objects.all()
     serializer_class = NationalitySerializer
     permission_classes = [AllowAny]
+    
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        return Response({
+            'id': instance.id,
+            'image_url': instance.image.url
+        })
 
-    def perform_update(self, serializer):
-        base64_image = self.request.data.get('image', None)
-        nationality = serializer.save()
-        if base64_image:
-            nationality.save_image_from_base64(base64_image, nationality.Nationality)
-            nationality.save()
+    
     
     
 ################# Get manay & delete manay ################################

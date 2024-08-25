@@ -33,6 +33,8 @@ from drf_yasg import openapi
 from rest_framework_swagger.renderers import SwaggerUIRenderer, OpenAPIRenderer
 from rest_framework.permissions import AllowAny 
 from django.contrib.auth import views as auth_views
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 
@@ -77,3 +79,6 @@ urlpatterns = [
     #path('swagger/register/', schema_view_v2, name='swagger-ui-v2'),  
 ]
 
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

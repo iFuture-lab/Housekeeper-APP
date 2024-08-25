@@ -26,7 +26,7 @@ class SoftDeleteManager(models.Manager):
     
 class Nationallity(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    Nationality= models.CharField(max_length=150,)
+    Nationality= models.CharField(max_length=150,unique=True)
     is_active = models.BooleanField(default=True)
     image = models.ImageField(upload_to='nationality_images/', null=True, blank=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
@@ -38,6 +38,12 @@ class Nationallity(models.Model):
             format, imgstr = base64_image_data.split(';base64,') 
             ext = format.split('/')[-1]  
             self.image.save(f'{filename}.{ext}', ContentFile(base64.b64decode(imgstr)), save=False)
+            
+            
+    def save(self, *args, **kwargs):
+        # Normalize to lowercase before saving
+        self.Nationality = self.Nationality.lower()
+        super().save(*args, **kwargs)
     
     # def save_image_from_base64(self, base64_image_data, filename):
     #     if base64_image_data:
