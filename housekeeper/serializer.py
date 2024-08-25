@@ -3,7 +3,7 @@ from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferReques
 from login.models import CustomUser
 from nationality.views import NationalitySerializer
 from nationality.models import Nationallity
-from .models import ActionLog
+from .models import ActionLog,Religion,EmploymentType
 from django.utils import timezone
 from decimal import Decimal
 from service_type.models import ServiceType
@@ -13,6 +13,8 @@ from .religion_view import ReligionSerializer
 from .employment_type_view import EmploymentTypeSerializer
 from service_type.serializers import ServiceTypeSerializer
 from .models import HousekeeperRequestType
+from nationality.models import Nationallity
+
 
 
 
@@ -103,13 +105,16 @@ class DummyRecruitmentRequestSerializer(serializers.ModelSerializer):
 class HousekeeperSerializer(serializers.ModelSerializer):
     # nationality = serializers.PrimaryKeyRelatedField(queryset=Nationallity.objects.all())
     
-    religion = ReligionSerializer()
-    employment_type = EmploymentTypeSerializer()
-    nationality = NationalitySerializer()
+    # religion = ReligionSerializer()
+    # employment_type = EmploymentTypeSerializer()
+    # nationality = NationalitySerializer()
+    
+   
     # request_types = ServiceTypeSerializer(many=True)
     #requests_types = HousekeeperRequestTypeSerializer(source='housekeeperrequesttype_set', many=True)
     salary = serializers.SerializerMethodField()
-    requests_types= serializers.SerializerMethodField()
+    request_types_detail= serializers.SerializerMethodField()
+    
     
    
     request_types = serializers.PrimaryKeyRelatedField(
@@ -117,8 +122,45 @@ class HousekeeperSerializer(serializers.ModelSerializer):
         many=True
     )
     
+    religion = serializers.PrimaryKeyRelatedField(
+        queryset=Religion.objects.all(),
+      
+        write_only=True
+    )
+    employment_type = serializers.PrimaryKeyRelatedField(
+        queryset=EmploymentType.objects.all(),
+      
+        write_only=True
+    )
+    nationality = serializers.PrimaryKeyRelatedField(
+        queryset=Nationallity.objects.all(),
+        write_only=True
+    )
     
-    def get_requests_types(self, obj):
+   
+    religion_detail = serializers.SerializerMethodField()
+    employment_type_detail = serializers.SerializerMethodField()
+    nationality_detail = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Housekeeper
+        fields = '__all__'  # or specify the fields you want to include
+        extra_kwargs = {
+            'religion': {'write_only': True},
+            'employment_type': {'write_only': True},
+            'nationality': {'write_only': True},
+        }
+
+    def get_religion_detail(self, obj):
+        return ReligionSerializer(obj.religion).data
+
+    def get_employment_type_detail(self, obj):
+        return EmploymentTypeSerializer(obj.employment_type).data
+
+    def get_nationality_detail(self, obj):
+        return NationalitySerializer(obj.nationality).data
+    
+    def get_request_types_detail(self, obj):
         return ServiceTypeSerializer(obj.request_types.all(), many=True).data
   
     class Meta:
@@ -143,6 +185,7 @@ class HousekeeperSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         representation.pop('deleted_at', None)
         representation.pop('rating', None)
+        
         
         
     
@@ -177,11 +220,9 @@ class HousekeeperSerializer(serializers.ModelSerializer):
 
 class HireRequestSerializer(serializers.ModelSerializer):
     employment_type = serializers.SerializerMethodField()
-    housekeeper = HousekeeperSerializer()
-    request_type = ServiceTypeSerializer()
-    status=StatusSerializer()
-    
-    
+   
+    housekeeper_detail = serializers.SerializerMethodField()
+    status_detail = serializers.SerializerMethodField()
     
     
     # requester = serializers.UUIDField(read_only=True)
@@ -197,6 +238,9 @@ class HireRequestSerializer(serializers.ModelSerializer):
         read_only_fields = ('requester',)
         
         
+
+    
+           
     def create(self, validated_data):
         request = self.context.get('request')
         if request and hasattr(request, 'user'):
@@ -213,8 +257,29 @@ class HireRequestSerializer(serializers.ModelSerializer):
     
         return representation
     
+    def get_housekeeper_detail(self, obj):
+        return HousekeeperSerializer(obj.housekeeper).data
+
+    def get_status_detail(self, obj):
+        return StatusSerializer(obj.status).data
+    
     def get_employment_type(self, obj):
         return obj.housekeeper.employment_type.name if obj.housekeeper and obj.housekeeper.employment_type else None
+    
+      # housekeeper = HousekeeperSerializer()
+    # request_type = ServiceTypeSerializer()
+    # status=StatusSerializer()
+    
+   
+    # housekeeper = serializers.PrimaryKeyRelatedField(
+    #     queryset=Housekeeper.objects.all(),    
+    #     write_only=True
+    # )
+    
+    # status = serializers.PrimaryKeyRelatedField(
+    #     queryset=Status.objects.all(),
+    #     write_only=True
+    # )
         
         
     # def get_old_price(self, obj):
@@ -262,9 +327,11 @@ class RecruitmentRequestSerializer(serializers.ModelSerializer):
     # requester = serializers.UUIDField(read_only=True)
     # requester = CustomUserSerializer(read_only=True)
     employment_type = serializers.SerializerMethodField()
-    housekeeper = HousekeeperSerializer()
-    request_type = ServiceTypeSerializer()
-    status=StatusSerializer()
+    housekeeper_detail = serializers.SerializerMethodField()
+    status_detail = serializers.SerializerMethodField()
+    # housekeeper = HousekeeperSerializer()
+    # request_type = ServiceTypeSerializer()
+    # status=StatusSerializer()
     
     class Meta:
         model = RecruitmentRequest
@@ -287,6 +354,13 @@ class RecruitmentRequestSerializer(serializers.ModelSerializer):
         representation.pop('temporary_discount', None)
     
         return representation
+    
+    
+    def get_housekeeper_detail(self, obj):
+        return HousekeeperSerializer(obj.housekeeper).data
+
+    def get_status_detail(self, obj):
+        return StatusSerializer(obj.status).data
     
     
     def get_employment_type(self, obj):
@@ -328,11 +402,13 @@ class TransferRequestSerializer(serializers.ModelSerializer):
     # has_discount = serializers.SerializerMethodField()
     # status = StatusSerializer()
     
-    housekeeper = HousekeeperSerializer()
-    request_type = ServiceTypeSerializer()
-    status=StatusSerializer()
+    # housekeeper = HousekeeperSerializer()
+    # request_type = ServiceTypeSerializer()
+    # status=StatusSerializer()
     
     employment_type = serializers.SerializerMethodField()
+    housekeeper_detail = serializers.SerializerMethodField()
+    status_detail = serializers.SerializerMethodField()
     class Meta:
         model = TransferRequest
         fields = '__all__'
@@ -354,6 +430,14 @@ class TransferRequestSerializer(serializers.ModelSerializer):
         representation.pop('temporary_discount', None)
     
         return representation
+    
+    
+    
+    def get_housekeeper_detail(self, obj):
+        return HousekeeperSerializer(obj.housekeeper).data
+
+    def get_status_detail(self, obj):
+        return StatusSerializer(obj.status).data
     
     
     def get_employment_type(self, obj):

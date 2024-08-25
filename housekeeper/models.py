@@ -11,6 +11,7 @@ from django.contrib.auth import get_user_model
 import uuid
 from temporary_discount.models import TempoararyDiscount,CustomPackage
 from django.utils import timezone
+from django.core.validators import RegexValidator
 
 
 
@@ -66,7 +67,7 @@ class ActionLog(models.Model):
 
 class Status(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    Status= models.CharField(max_length=50)
+    Status= models.CharField(max_length=50,unique=True)
     is_active = models.BooleanField(default=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
     
@@ -92,7 +93,7 @@ class Status(models.Model):
     
 class Religion(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100,unique=True)
     is_active = models.BooleanField(default=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
     
@@ -119,7 +120,7 @@ class Religion(models.Model):
     
 class EmploymentType(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100,unique=True)
     is_active = models.BooleanField(default=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
     
@@ -151,27 +152,27 @@ class EmploymentType(models.Model):
     
 class Housekeeper(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    Name= models.CharField(max_length=50,)
+    Name= models.CharField(max_length=50,unique=True)
     Age= models.IntegerField()
     gender_CHOICES = {
     "female": "Female",
     "male": "Male",
 }
     gender=models.CharField(max_length=50,choices=gender_CHOICES,default='female')
-    nationality= models.ForeignKey(Nationallity, on_delete=models.CASCADE)  
+    nationality= models.ForeignKey(Nationallity, on_delete=models.CASCADE,null=True)  
     religion= models.ForeignKey(Religion,on_delete=models.CASCADE,null=True)
-    isactive = models.BooleanField(default=True)  #
-    is_available = models.BooleanField(default=True)  # Ensure parentheses are used
+    isactive = models.BooleanField(default=True)  
+    is_available = models.BooleanField(default=True)  
     worked_before = models.BooleanField(default=True)
     employment_type = models.ForeignKey(EmploymentType,on_delete=models.CASCADE,null=True)
-    experience_years = models.IntegerField()  
-    languages_spoken = models.JSONField() 
-    rating = models.FloatField() 
+    experience_years = models.IntegerField(null=True,blank=True)  
+    languages_spoken = models.JSONField(null=True,blank=True) 
+    rating = models.FloatField(null=True,blank=True) 
     request_types= models.ManyToManyField(ServiceType, through='HousekeeperRequestType',related_name='housekeeper')
     deleted_at = models.DateTimeField(null=True, blank=True)
     
-    objects = SoftDeleteManager()  # Custom manager
-    all_objects = models.Manager()  # Default manager to access all records, including deleted
+    objects = SoftDeleteManager()  
+    all_objects = models.Manager()  
 
     def delete(self):
        #soft deleting
@@ -254,10 +255,11 @@ class HireRequest(models.Model):
     readonly_fields = ('pericepernationality_id',)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='hire_requests',)
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
-    requester_contact = models.CharField(max_length=100)
+    phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$', message="contact numbber must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    requester_contact = models.CharField(validators=[phone_regex],max_length=17)
     request_date = models.DateField(default=get_current_date)
     requester_firstName = models.CharField(max_length=100,) 
-    requester_lastName = models.CharField(max_length=100,)   
+    requester_lastName = models.CharField(max_length=100,)  
     requester_city = models.CharField(max_length=100,) 
     duration=models.IntegerField()
     total_price =models.FloatField(default=0.0)
@@ -342,7 +344,8 @@ class RecruitmentRequest(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='recruitment_requests')
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  
-    requester_contact = models.CharField(max_length=100)
+    phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$', message="contact numbber must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    requester_contact = models.CharField(validators=[phone_regex], max_length=17,)
     visa_status= models.BooleanField(default=False)
     request_date = models.DateField(default=get_current_date)
     requester_firstName = models.CharField(max_length=100,) 
@@ -427,7 +430,8 @@ class TransferRequest(models.Model):
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='transfer_requests')
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
     request_date = models.DateField(default=get_current_date) 
-    requester_contact = models.CharField(max_length=100)
+    phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$', message="contact numbber must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    requester_contact = models.CharField(validators=[phone_regex], max_length=17,)
     # status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
     status = models.ForeignKey(Status, on_delete=models.CASCADE, default=get_default_status,blank=True)
     requester_firstName = models.CharField(max_length=100,) 
@@ -442,8 +446,8 @@ class TransferRequest(models.Model):
     order_id = models.CharField(max_length=255, unique=True, blank=True, null=True) 
     deleted_at = models.DateTimeField(null=True, blank=True)
     
-    objects = SoftDeleteManager()  # Custom manager
-    all_objects = models.Manager()  # Default manager to access all records, including deleted
+    objects = SoftDeleteManager()  
+    all_objects = models.Manager() 
 
     def delete(self):
        #soft deleting

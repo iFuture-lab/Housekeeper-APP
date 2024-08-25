@@ -1,6 +1,4 @@
 from django.db import models
-# from django.contrib.auth.models import User
-#from phonenumber_field.modelfields import PhoneNumberField
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
@@ -10,6 +8,7 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils import timezone
 from django.conf import settings
 import uuid
+from django.core.validators import EmailValidator
 
 
 
@@ -92,8 +91,8 @@ class CustomUser(AbstractBaseUser):
     password = models.CharField(max_length=128)  # Ensure you hash passwords properly
     # password2 = models.CharField(max_length=128)  # Ensure you hash passwords properly
     phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
-    phone_number = models.CharField(validators=[phone_regex], max_length=17, blank=True,unique=True) # Validators should be a list
-    email=models.CharField(max_length=100,null=True)
+    phone_number = models.CharField(validators=[phone_regex], max_length=17, blank=True,unique=True) 
+    email=models.CharField(max_length=100,null=True, validators=[EmailValidator(message="Enter a valid email address.")])
     dateOfBirth = models.DateField(default=timezone.now) 
     nationalID=  models.CharField(max_length=100,default="1234567890o")
     is_staff = models.BooleanField(default=False)
