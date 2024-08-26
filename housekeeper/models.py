@@ -12,6 +12,7 @@ import uuid
 from temporary_discount.models import TempoararyDiscount,CustomPackage
 from django.utils import timezone
 from django.core.validators import RegexValidator
+from decimal import Decimal
 
 
 
@@ -63,6 +64,34 @@ class ActionLog(models.Model):
     def hard_delete(self):
         # delete the record in real 
         super().delete()
+        
+        
+class Taxes(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name= models.CharField(max_length=50,unique=True)
+    amount= models.FloatField()
+    is_active = models.BooleanField(default=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
+    objects = SoftDeleteManager()  
+    all_objects = models.Manager()  
+
+    def delete(self):
+       #soft deleting
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        # Restore a soft-deleted record 
+        self.deleted_at = None
+        self.save()
+
+    def hard_delete(self):
+        # delete the record in real 
+        super().delete()
+    
+    def __str__(self):
+        return self.name
 
 
 class Status(models.Model):
@@ -250,6 +279,9 @@ class HireRequest(models.Model):
     
     def get_default_status():
         return Status.objects.get(Status='Pending')
+    
+    def get_default_taxes():
+        return Taxes.objects.get(name='default')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     readonly_fields = ('pericepernationality_id',)
@@ -262,14 +294,17 @@ class HireRequest(models.Model):
     requester_lastName = models.CharField(max_length=100,)  
     requester_city = models.CharField(max_length=100,) 
     duration=models.IntegerField()
-    total_price =models.FloatField(default=0.0)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
+    price=models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
     # status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
     status = models.ForeignKey(Status, on_delete=models.CASCADE, default=get_default_status,blank=True)
-    temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE)
-    custom_package_id = models.ForeignKey(CustomPackage, on_delete=models.CASCADE,null=True)
+    temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE,blank=True)
+    custom_package_id = models.ForeignKey(CustomPackage, on_delete=models.CASCADE,null=True,blank=True)
     request_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE,null=True,default=get_default_service_type)
     order_id = models.CharField(max_length=255, unique=True, blank=True, null=True) 
     deleted_at = models.DateTimeField(null=True, blank=True)
+    tax_id = models.ForeignKey(Taxes, null=True, on_delete=models.CASCADE,blank=True,default=get_default_taxes)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
     
     objects = SoftDeleteManager()  # Custom manager
     all_objects = models.Manager()  # Default manager to access all records, including deleted
@@ -308,13 +343,28 @@ class HireRequest(models.Model):
                     
                     
                 )
-                self.custom_package_id= perice
-                self.total_price = self.duration * perice.final_price
+                
+                print(perice.final_price)
+                
+                self.price=perice.final_price
+                
+                add_tax = Decimal(0)  
+
+                if self.tax_id:
+                    tax = Decimal(self.tax_id.amount)
+                    tax_fraction = tax / Decimal(100)
+                    print(tax_fraction)
+                    add_tax = perice.final_price * tax_fraction  
+                    print(add_tax)
+                    self.tax_amount=add_tax
+                    
+                total_perice = perice.final_price + add_tax  
+                self.total_price = total_perice
                 print("hiiiiiiiiiiiiiiiiiii")
-                # Apply discount if available
-              
+               
                 
             except CustomPackage.DoesNotExist:
+                print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
                 self.custom_package_id = None
                 self.total_price=0.0
                 
@@ -341,6 +391,10 @@ class RecruitmentRequest(models.Model):
     def get_default_status():
         return Status.objects.get(Status='Pending')
     
+    
+    def get_default_taxes():
+        return Taxes.objects.get(name='default')
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='recruitment_requests')
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  
@@ -354,13 +408,16 @@ class RecruitmentRequest(models.Model):
     #status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], default='Pending')
     # status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
     status = models.ForeignKey(Status, on_delete=models.CASCADE, default=get_default_status,blank=True)
-    temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE)
+    temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE,blank=True)
     # pericepernationality_id = models.ForeignKey(PericePerNationality, on_delete=models.CASCADE,null=True)
-    total_price =models.FloatField(default=0.0)
-    custom_package_id = models.ForeignKey(CustomPackage, on_delete=models.CASCADE,null=True)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
+    price=models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
+    custom_package_id = models.ForeignKey(CustomPackage, on_delete=models.CASCADE,null=True,blank=True)
     request_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE,null=True,default=get_default_service_type)
     order_id = models.CharField(max_length=255, unique=True, blank=True, null=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
+    tax_id = models.ForeignKey(Taxes, null=True, on_delete=models.CASCADE,blank=True,default=get_default_taxes)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
     
     objects = SoftDeleteManager()  
     all_objects = models.Manager()  
@@ -396,11 +453,25 @@ class RecruitmentRequest(models.Model):
                     
                     
                 )
-                self.custom_package_id= perice
-                self.total_price = perice.final_price
-                print("hiiiiiiiiiiiiiiiiiii")
-                # Apply discount if available
-              
+                
+                self.price=perice.final_price
+                
+                add_tax = Decimal(0)  
+
+                if self.tax_id:
+                    tax = Decimal(self.tax_id.amount)
+                    tax_fraction = tax / Decimal(100)
+                    print(tax_fraction)
+                    add_tax = perice.final_price * tax_fraction  
+                    print(add_tax)
+                    self.tax_amount=add_tax
+                    
+                
+
+                total_perice = perice.final_price + add_tax  
+                self.total_price = total_perice
+                print("hiiiiiiiiiiiiiiiiiii i got ittttttttttttttttttttt")
+            
                 
             except CustomPackage.DoesNotExist:
                 self.custom_package_id = None
@@ -425,6 +496,11 @@ class TransferRequest(models.Model):
     
     def get_default_status():
         return Status.objects.get(Status='Pending')
+     
+    
+    def get_default_taxes():
+        return Taxes.objects.get(name='default')
+    
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='transfer_requests')
@@ -437,14 +513,17 @@ class TransferRequest(models.Model):
     requester_firstName = models.CharField(max_length=100,) 
     requester_lastName = models.CharField(max_length=100,)   
     requester_city = models.CharField(max_length=100,) 
-    temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE)
+    temporary_discount = models.ForeignKey(TempoararyDiscount, null=True, on_delete=models.CASCADE,blank=True)
     # pericepernationality_id = models.ForeignKey(PericePerNationality, on_delete=models.CASCADE,null=True)
     # service_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE,null=True,default=get_default_service_type)
-    total_price =models.FloatField(default=0.0)
-    custom_package_id = models.ForeignKey(CustomPackage, on_delete=models.CASCADE,null=True)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
+    price=models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
+    custom_package_id = models.ForeignKey(CustomPackage, on_delete=models.CASCADE,null=True,blank=True)
     request_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE,null=True,default=get_default_service_type)
     order_id = models.CharField(max_length=255, unique=True, blank=True, null=True) 
     deleted_at = models.DateTimeField(null=True, blank=True)
+    tax_id = models.ForeignKey(Taxes, null=True, on_delete=models.CASCADE,blank=True,default=get_default_taxes)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
     
     objects = SoftDeleteManager()  
     all_objects = models.Manager() 
@@ -480,10 +559,25 @@ class TransferRequest(models.Model):
                     
                     
                 )
-                self.custom_package_id= perice
-                self.total_price = perice.final_price
+                
+                self.price=perice.final_price
+                
+                add_tax = Decimal(0)  
+
+                if self.tax_id:
+                    tax = Decimal(self.tax_id.amount)
+                    tax_fraction = tax / Decimal(100)
+                    print(tax_fraction)
+                    add_tax = perice.final_price * tax_fraction  
+                    print(add_tax)
+                    self.tax_amount=add_tax
+                    
+                
+
+                total_perice = perice.final_price + add_tax  
+                self.total_price = total_perice
                 print("hiiiiiiiiiiiiiiiiiii")
-                # Apply discount if available
+            
               
                 
             except CustomPackage.DoesNotExist:

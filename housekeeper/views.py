@@ -10,9 +10,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferRequest,HousekeeperRequestType
-from .serializer import HousekeeperSerializer, HireRequestSerializer, RecruitmentRequestSerializer, TransferRequestSerializer
+from .serializer import HousekeeperSerializer, HireRequestSerializer, RecruitmentRequestSerializer, TransferRequestSerializer,TaxesSerializer
 from .serializer import DummyHousekeeperSerializer,HousekeeperIDSerializer,DummyHireHousekeeperSerializer,DummyRecruitmentRequestSerializer,DummyTransferRequestSerializer,DeleteHousekeeper,UpdateHireRequest
-from.models import Status
+from.models import Status,Taxes
 from .filter import HousekeeperFilter
 from django.db import transaction
 from .filter import StatusFilter
@@ -1430,6 +1430,22 @@ class TransferBatchStatusUpdateView(ActionLoggingMixin,APIView):
         
      
         return Response({"message": "Status updated successfully."}, status=status.HTTP_200_OK)
+    
+    
+    
+    
+    
+    ##############################Taxes################################################################################
+    
+class TaxesCreateView(generics.ListCreateAPIView):
+    queryset = Taxes.objects.all()
+    serializer_class = TaxesSerializer
+    permission_classes = [AllowAny] 
+
+class TaxesDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Taxes.objects.all()
+    serializer_class = TaxesSerializer
+    permission_classes = [AllowAny] 
         
     
     

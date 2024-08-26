@@ -3,7 +3,7 @@ from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferReques
 from login.models import CustomUser
 from nationality.views import NationalitySerializer
 from nationality.models import Nationallity
-from .models import ActionLog,Religion,EmploymentType
+from .models import ActionLog,Religion,EmploymentType,Taxes
 from django.utils import timezone
 from decimal import Decimal
 from service_type.models import ServiceType
@@ -25,7 +25,11 @@ class HousekeeperRequestTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = HousekeeperRequestType
         fields = ['id', 'request_type']
-
+        
+class TaxesSerializer(serializers.ModelSerializer):  
+    class Meta:
+        model = Taxes
+        fields = '__all__'
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
