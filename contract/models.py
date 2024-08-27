@@ -121,9 +121,9 @@ class UserInterest(models.Model):
 
     interest_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='interests')
-    service_id = models.IntegerField() # what do you mean by this like hire , transfer, custom package
+    service_id = models.CharField(max_length=100) 
     timestamp = models.DateTimeField(default=timezone.now)
-    status = models.CharField(max_length=20, choices=INTEREST_STATUS_CHOICES)
+    status = models.CharField(max_length=20, choices=INTEREST_STATUS_CHOICES,blank=True,null=True)
     device_info = models.CharField(max_length=255, blank=True, null=True)
     session_data = models.JSONField(blank=True, null=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
