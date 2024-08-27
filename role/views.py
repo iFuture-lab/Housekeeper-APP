@@ -13,6 +13,12 @@ class RoleCreateView(generics.ListCreateAPIView):
     permission_classes = [AllowAny]
     
     
+class RoleDetailView(generics.RetrieveAPIView):
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+    permission_classes = [AllowAny]
+    
+    
     
 class PermissionCreateView(generics.ListCreateAPIView):
     queryset = Permission.objects.all()
