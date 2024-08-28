@@ -9,6 +9,7 @@ from drf_yasg import openapi
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from .permissions import MethodBasedPermissionsMixin
 
 
 #################serilizer#########################################
@@ -17,22 +18,22 @@ class ReligionSerializer(serializers.ModelSerializer):
         model = Religion
         fields = ['id', 'name']
         
-class ReligionCreateView(generics.ListCreateAPIView):
+class ReligionCreateView(MethodBasedPermissionsMixin,generics.ListCreateAPIView):
     queryset = Religion.objects.all()
     serializer_class = ReligionSerializer
-    permission_classes = [AllowAny] 
+    # permission_classes = [AllowAny] 
 
-class ReligionDetailView(generics.RetrieveUpdateDestroyAPIView):
+class ReligionDetailView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
     queryset = Religion.objects.all()
     serializer_class = ReligionSerializer
-    permission_classes = [AllowAny] 
+    # permission_classes = [AllowAny] 
     
     
     
 ################# Get manay & delete manay ################################
 
-class ReligionBatchDetailView(APIView):
-    permission_classes = [AllowAny]
+class ReligionBatchDetailView(MethodBasedPermissionsMixin,APIView):
+    # permission_classes = [AllowAny]
     serializer_class = ReligionSerializer
      
     @swagger_auto_schema(

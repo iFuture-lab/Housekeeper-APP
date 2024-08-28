@@ -148,7 +148,8 @@ class HousekeeperSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Housekeeper
-        fields = '__all__'  # or specify the fields you want to include
+        fields = '__all__' 
+        
         extra_kwargs = {
             'religion': {'write_only': True},
             'employment_type': {'write_only': True},
@@ -229,8 +230,7 @@ class HireRequestSerializer(serializers.ModelSerializer):
     status_detail = serializers.SerializerMethodField()
     
     
-    # requester = serializers.UUIDField(read_only=True)
-    # requester = CustomUserSerializer(read_only=True)
+   
     
     # old_price = serializers.SerializerMethodField()   
     # new_price = serializers.SerializerMethodField()

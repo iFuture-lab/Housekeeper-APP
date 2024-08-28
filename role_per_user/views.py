@@ -19,44 +19,37 @@ from service_type.models import ServiceType
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .serializers import RolePerUserSerializer,RolePerClientSerializer
+from housekeeper.permissions import MethodBasedPermissionsMixin
     
-class RolePerUserRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+class RolePerUserRetrieveUpdateDestroyView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
     queryset = RolePerUser.objects.all()
     serializer_class = RolePerUserSerializer
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]
  
     
         
-class RolePerUserCreateView(generics.ListCreateAPIView):
+class RolePerUserCreateView(MethodBasedPermissionsMixin,generics.ListCreateAPIView):
     queryset = RolePerUser.objects.all()
     serializer_class = RolePerUserSerializer
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]
     
     
-
-    # def get(self, request, *args, **kwargs):
-    #     return super().get(request, *args, **kwargs)
-
-    # def put(self, request, *args, **kwargs):
-    #     return super().put(request, *args, **kwargs)
 
   
-    # def delete(self, request, *args, **kwargs):
-    #     return super().delete(request, *args, **kwargs) 
     
     
     
-class RolePerClientRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+class RolePerClientRetrieveUpdateDestroyView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
     queryset = RolePerClient.objects.all()
     serializer_class = RolePerClientSerializer
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]
 
     
         
-class RolePerClientCreateView(generics.ListCreateAPIView):
+class RolePerClientCreateView(MethodBasedPermissionsMixin,generics.ListCreateAPIView):
     queryset = RolePerClient.objects.all()
     serializer_class = RolePerClientSerializer
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]
     
 
     

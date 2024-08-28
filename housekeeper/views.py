@@ -21,23 +21,35 @@ from .utils import ActionLoggingMixin,send_message
 from uuid import UUID
 import uuid
 from django.core.exceptions import ValidationError
-
 from temporary_discount.models import CustomPackage
-
-from role.permissions import HasPermission
-
 from django.conf import settings
 from django.http import HttpResponse
 import os
 from .serializer import CombinedRequestsSerializer
-
-
-
-class CombinedRequestsByRequester(APIView):
+from .permissions import RolePermission,MethodBasedPermissionsMixin
     
+    
+    
+    
+    
+    
+    
+  
+
+
+
+
+class CombinedRequestsByRequester(MethodBasedPermissionsMixin,APIView):
     serializer_class= CombinedRequestsSerializer
-    permission_classes = [AllowAny]
+    # permission_classes = [RolePermission]
     
+    # def get_permissions(self):
+    #     if self.request.method == 'GET':
+    #         self.required_permissions = ['read']
+    #     elif self.request.method == 'POST':
+    #         self.required_permissions = ['create']
+    #     return super().get_permissions()
+
 
     def get(self, request):
         requester_id = request.query_params.get('requester_id', None)
@@ -69,60 +81,24 @@ class CombinedRequestsByRequester(APIView):
 
 
 
-# class CombinedRequestsByRequester(APIView):
-#     permission_classes = [AllowAny]
-
-#     def get_queryset(self, model_class, requester_id):
-#         return model_class.objects.filter(requester_id=requester_id)
-
-#     def get(self, request):
-#         requester_id = request.query_params.get('requester_id', None)
-
-#         if requester_id is None:
-#             return Response({'error': 'requester_id query parameter is required'}, status=400)
-
-#         try:
-#             requester_uuid = UUID(requester_id)
-#         except ValueError:
-#             return Response({'error': 'Invalid UUID format'}, status=400)
-
-#         hire_requests = self.get_queryset(HireRequest, requester_uuid)
-#         recruitment_requests = self.get_queryset(RecruitmentRequest, requester_uuid)
-#         transfer_requests = self.get_queryset(TransferRequest, requester_uuid)
-
-#         data = {
-#             'requests': {
-#                 'hire_requests': HireRequestSerializer(hire_requests, many=True).data,
-#                 'recruitment_requests': RecruitmentRequestSerializer(recruitment_requests, many=True).data,
-#                 'transfer_requests': TransferRequestSerializer(transfer_requests, many=True).data,
-#             }
-#         }
-
-#         return Response(data)
-
-    
-      
-
-
-
 ################################filter for request Status####################################################
 
 
-class RecruitmentListView(generics.ListAPIView):
+class RecruitmentListView(MethodBasedPermissionsMixin,generics.ListAPIView):
     permission_classes = [AllowAny]
     queryset = RecruitmentRequest.objects.all()
     serializer_class = HousekeeperSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = StatusFilter
 
-class HireRequestListView(generics.ListAPIView):
+class HireRequestListView(MethodBasedPermissionsMixin,generics.ListAPIView):
     permission_classes = [AllowAny]
     queryset = HireRequest.objects.all()
     serializer_class = HireRequestSerializer
     # filter_backends = [DjangoFilterBackend]
     filterset_class = StatusFilter
 
-class TransferRequestListView(generics.ListAPIView):
+class TransferRequestListView(MethodBasedPermissionsMixin,generics.ListAPIView):
     permission_classes = [AllowAny]
     queryset = TransferRequest.objects.all()
     serializer_class = TransferRequestSerializer
@@ -132,7 +108,7 @@ class TransferRequestListView(generics.ListAPIView):
     
     
 ####################################################new API ##############################################################################
-class HousekeeperListView(APIView):
+class HousekeeperListView(MethodBasedPermissionsMixin,APIView):
     permission_classes = [AllowAny]
     @swagger_auto_schema(
         manual_parameters=[
@@ -272,15 +248,13 @@ class HousekeeperListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
             
 
-    # # Serialize the queryset and return the response
-    #     serializer = HousekeeperSerializer(housekeepers.distinct(), many=True)
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
+
         
 
 
-###############################################
+###################################################################################################################################################################
 
-class HousekeeperFilterView(APIView):
+class HousekeeperFilterView(MethodBasedPermissionsMixin,APIView):
     permission_classes = [AllowAny]
     @swagger_auto_schema(
         manual_parameters=[
@@ -346,12 +320,11 @@ class HousekeeperFilterView(APIView):
         religion_id = request.GET.get('religion')
         age = request.GET.get('age')
         nationality_id = request.GET.get('nationality')
-        ids = request.GET.getlist('ids')  # Assuming the ids are passed as a list
-
-    # Start with all available housekeepers
+        ids = request.GET.getlist('ids')  
+    #  all available housekeepers
         housekeepers = Housekeeper.objects.filter(is_available=True)
 
-    # Apply filters if provided
+    
         if religion_id:
             try:
                 religion_uuid = UUID(religion_id)
@@ -390,7 +363,7 @@ class HousekeeperFilterView(APIView):
 
 ###################################filter for nationallity, Age, is_avalibale #############################################################
 
-class AvailableHousekeeper(generics.ListAPIView):
+class AvailableHousekeeper(MethodBasedPermissionsMixin,generics.ListAPIView):
     permission_classes = [AllowAny]
     queryset = Housekeeper.objects.all()
     serializer_class = HousekeeperSerializer
@@ -398,7 +371,7 @@ class AvailableHousekeeper(generics.ListAPIView):
     filterset_class = HousekeeperFilter
     
     
-class HousekeeperBatchDetailView(ActionLoggingMixin,APIView):
+class HousekeeperBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMixin,APIView):
     permission_classes = [AllowAny]
     serializer_class = DummyHousekeeperSerializer
     
@@ -414,17 +387,16 @@ class HousekeeperBatchDetailView(ActionLoggingMixin,APIView):
         ]
     )
     def get(self, request, *args, **kwargs):
-        # Extract the 'ids' parameter from the query parameters
+       
         ids = request.query_params.get('ids', '')
         
 
-        # Split the 'ids' parameter by commas and convert to integers
         try:
             # ids = list(map(int, ids.split(',')))
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
-                user=request.user if request.user.is_authenticated else None,
+                user=request.user,
                 action_type="Error",
                 model_name="Housekeeper",
                 description="Invalid ID format in get request"
@@ -434,7 +406,7 @@ class HousekeeperBatchDetailView(ActionLoggingMixin,APIView):
         # Query the Housekeeper objects with the given IDs
         housekeepers = Housekeeper.objects.filter(id__in=uuid_list)
 
-        # Serialize the data
+      
         serializer = HousekeeperSerializer(housekeepers, many=True)
         
         
@@ -454,16 +426,15 @@ class HousekeeperBatchDetailView(ActionLoggingMixin,APIView):
         responses={204: 'No Content'}
     )
     def delete(self, request, *args, **kwargs):
-        # Extract the 'ids' parameter from the query parameters
+    
         ids = request.query_params.get('ids', '')
 
-        # Split the 'ids' parameter by commas and convert to integers
         try:
             # ids = list(map(int, ids.split(',')))
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
-                user=request.user if request.user.is_authenticated else None,
+                user=request.user,
                 action_type="Error",
                 model_name="Housekeeper",
                 description="Invalid ID format in delete request"
@@ -473,7 +444,7 @@ class HousekeeperBatchDetailView(ActionLoggingMixin,APIView):
         # Delete the Housekeeper objects with the given IDs
         count, _ = Housekeeper.objects.filter(id__in=uuid_list).delete()
         self.log_action(
-            user=request.user if request.user.is_authenticated else None,
+            user=request.user,
             action_type="Deleted",
             model_name="Housekeeper",
             description=f"Successfully deleted {count} Housekeeper for IDs: {uuid_list}"
@@ -484,10 +455,10 @@ class HousekeeperBatchDetailView(ActionLoggingMixin,APIView):
     
 
 
-class HousekeeperListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
+class HousekeeperListCreateView(MethodBasedPermissionsMixin,ActionLoggingMixin,generics.ListCreateAPIView):
     queryset = Housekeeper.objects.all()
     serializer_class = HousekeeperSerializer
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]
     
     @swagger_auto_schema(
         manual_parameters=[
@@ -522,12 +493,10 @@ class HousekeeperListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
                             'gender': openapi.Schema(type=openapi.TYPE_STRING),
                             'nationality': openapi.Schema(type=openapi.TYPE_STRING),
                             'religion': openapi.Schema(type=openapi.TYPE_STRING),
-                            'isactive': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                             'is_available': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                             'worked_before': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                             'employment_type': openapi.Schema(type=openapi.TYPE_STRING),
-                            'monthly_salary': openapi.Schema(type=openapi.TYPE_NUMBER),
-                            'pricePerMonth': openapi.Schema(type=openapi.TYPE_NUMBER),
+                          
                         }
                     )
                 )
@@ -539,7 +508,6 @@ class HousekeeperListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
         queryset = Housekeeper.objects.all()
         sort_by = self.request.GET.get('sort_by', 'Name')
         nationalities = self.request.GET.getlist('nationality')
-
         if nationalities:
             queryset = queryset.filter(nationality__Nationality__in=nationalities)
             
@@ -554,7 +522,7 @@ class HousekeeperListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
     
     def get(self, request, *args, **kwargs):
         # Log the action  
-        user = request.user if request.user.is_authenticated else None
+        user = request.user 
         self.log_action(
             user=user,
             action_type="Listed",
@@ -564,7 +532,7 @@ class HousekeeperListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
 
     def post(self, request, *args, **kwargs):
         # Log the action
-        user = request.user if request.user.is_authenticated else None
+        user = request.user 
         self.log_action(
             user=user,
             action_type="Created",
@@ -572,10 +540,10 @@ class HousekeeperListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
         )
         return super().post(request, *args, **kwargs)
 
-class HousekeeperDetailView(generics.RetrieveUpdateDestroyAPIView):
+class HousekeeperDetailView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
     queryset = Housekeeper.objects.all()
     serializer_class = HousekeeperSerializer
-    permission_classes = [AllowAny] 
+    # permission_classes = [AllowAny] 
 
 
     
@@ -588,8 +556,8 @@ class HousekeeperIDsView(generics.GenericAPIView):
     
 #########################################################################################################
 
-class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
-    permission_classes = [AllowAny]
+class HireHousekeeperBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMixin,APIView):
+    # permission_classes = [AllowAny]
     serializer_class = DummyHireHousekeeperSerializer
      
     @swagger_auto_schema(
@@ -613,7 +581,7 @@ class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
-            user=request.user if request.user.is_authenticated else None,
+            user=request.user,
             action_type="Error",
             model_name="HireReguest",
             description="Invalid ID format in request"
@@ -626,7 +594,7 @@ class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
         
         serializer = HireRequestSerializer(housekeepers, many=True)
         self.log_action(
-        user=request.user if request.user.is_authenticated else None,
+        user=request.user,
         action_type="Retrieved",
         model_name="HireReguest",
         description=f"Successfully retrieved {len(housekeepers)} HireRequests for IDs: {uuid_list}"
@@ -645,8 +613,7 @@ class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
             )
         ]
     )
-    
-    
+      
     def delete(self, request, *args, **kwargs):
         # Extract the 'ids' parameter from the query parameters
         ids = request.query_params.get('ids', '')
@@ -657,7 +624,7 @@ class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
-            user=request.user if request.user.is_authenticated else None,
+            user=request.user,
             action_type="Error",
             model_name="HireRequest",
             description="Invalid ID format in request"
@@ -667,7 +634,7 @@ class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
         # Delete the Housekeeper objects with the given IDs
         count, _ = HireRequest.objects.filter(id__in=uuid_list).delete()
         self.log_action(
-        user=request.user if request.user.is_authenticated else None,
+        user=request.user,
         action_type="Deleted",
         model_name="HireRequest",
         description=f"Successfully deleted {count} HireRequests for IDs: {uuid_list}"
@@ -676,10 +643,10 @@ class HireHousekeeperBatchDetailView(ActionLoggingMixin,APIView):
         # Return the count of deleted objects
         return Response({"deleted": count}, status=status.HTTP_204_NO_CONTENT)
     
-class HireRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
+class HireRequestListCreateView(MethodBasedPermissionsMixin,ActionLoggingMixin,generics.ListCreateAPIView):
     queryset = HireRequest.objects.all()
     serializer_class = HireRequestSerializer
-    permission_classes = [AllowAny] 
+    # permission_classes = [AllowAny] 
     
     def get_queryset(self):
         queryset = HireRequest.objects.all()
@@ -702,7 +669,7 @@ class HireRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
     
     def get(self, request, *args, **kwargs):
         # Log the action  
-        user = request.user if request.user.is_authenticated else None
+        user = request.user
         self.log_action(
             user=user,
             action_type="Listed",
@@ -718,7 +685,7 @@ class HireRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
         headers = self.get_success_headers(serializer.data)
     
         # Log the action
-        user = request.user if request.user.is_authenticated else None
+        user = request.user
         self.log_action(
             user=user,
             action_type="Created",
@@ -733,11 +700,11 @@ class HireRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
         hire_request_serializer = HireRequestSerializer(serializer.instance)
     
     # Retrieve all request details and include order_id
-        request_details = hire_request_serializer.data.copy()  # Copy serialized data
-        request_details['order_id'] = order_id  # Add the order_id to the details
+        request_details = hire_request_serializer.data.copy()  
+        request_details['order_id'] = order_id  
     
     # Send notification to the requester with request details
-        phone_number = serializer.validated_data.get('request_contact')
+        phone_number = serializer.validated_data.get('requester_contact')
         test_mode = request.data.get('test_mode', False)
         success, message = send_message(phone_number, request_details, test_mode=test_mode)
     
@@ -768,16 +735,16 @@ class HireRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
 
      
 
-class HireRequestDetailView(generics.RetrieveUpdateDestroyAPIView):
+class HireRequestDetailView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
     queryset = HireRequest.objects.all()
     serializer_class = HireRequestSerializer
-    permission_classes = [AllowAny] 
+    # permission_classes = [AllowAny] 
     
     
 ############## update hire request status ####################################
-class HousekeeperBatchStatusUpdateView(ActionLoggingMixin,APIView):
+class HousekeeperBatchStatusUpdateView(MethodBasedPermissionsMixin,ActionLoggingMixin,APIView):
     serializer_class= UpdateHireRequest
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]
     
     @swagger_auto_schema(
         manual_parameters=[
@@ -804,19 +771,19 @@ class HousekeeperBatchStatusUpdateView(ActionLoggingMixin,APIView):
         uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         new_status_name = request.query_params.get('status', '')
         self.log_action(
-        user=request.user if request.user.is_authenticated else None,
+        user=request.user,
         action_type="Patch Requested",
         model_name="HireRequest",
         description=f"Patch request with IDs: {ids} and new status: {new_status_name}"
     )
 
-        # Split the 'ids' parameter by commas and convert to integers
+        
         try:
             # ids = list(map(int, ids.split(',')))
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
-            user=request.user if request.user.is_authenticated else None,
+            user=request.user,
             action_type="Error",
             model_name="HireRequest",
             description="Invalid ID format in patch request"
@@ -832,35 +799,35 @@ class HousekeeperBatchStatusUpdateView(ActionLoggingMixin,APIView):
             new_status = Status.objects.get(Status=new_status_name)
         except Status.DoesNotExist:
             self.log_action(
-            user=request.user if request.user.is_authenticated else None,
+            user=request.user,
             action_type="Error",
             model_name="HireRequest",
             description=f"Status '{new_status_name}' does not exist."
         )
             return Response({"error": f"Status '{new_status_name}' does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Query the Housekeeper objects with the given IDs
+        
         housekeepers = HireRequest.objects.filter(id__in=uuid_list)
         if not housekeepers.exists():
             self.log_action(
-            user=request.user if request.user.is_authenticated else None,
+            user=request.user,
             action_type="Error",
             model_name="HireRequest",
             description="No Hire Requests found for the provided IDs."
         )
             return Response({"error": "No Hire Requests found for the provided IDs."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Update the status field for the queried Housekeeper objects
+        
         housekeepers.update(status=new_status)
         
         self.log_action(
-        user=request.user if request.user.is_authenticated else None,
+        user=request.user,
         action_type="Updated",
         model_name="HireRequest",
         description=f"Successfully updated status for IDs: {ids} to {new_status_name}"
     )
                 
-        # Update Status and Housekeeper Availability
+        
         for hire_request in housekeepers:
             hire_request.status = new_status
             hire_request.save() # Save to trigger the update
@@ -875,13 +842,12 @@ class HousekeeperBatchStatusUpdateView(ActionLoggingMixin,APIView):
                 housekeeper.is_available = True
                 housekeeper.save()
         self.log_action(
-        user=request.user if request.user.is_authenticated else None,
+        user=request.user,
         action_type="Updated",
         model_name="HireRequest",
         description=f"Successfully updated status for IDs: {ids} to {new_status_name}"
     )
-                
-                   
+                             
         return Response({"message": "Status updated successfully."}, status=status.HTTP_200_OK)
      
         
@@ -889,8 +855,8 @@ class HousekeeperBatchStatusUpdateView(ActionLoggingMixin,APIView):
     
 ################################################################################
 
-class RecruitmentRequestBatchDetailView(ActionLoggingMixin,APIView):
-    permission_classes = [AllowAny]
+class RecruitmentRequestBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMixin,APIView):
+    # permission_classes = [AllowAny]
     serializer_class = DummyRecruitmentRequestSerializer
      
     @swagger_auto_schema(
@@ -905,7 +871,7 @@ class RecruitmentRequestBatchDetailView(ActionLoggingMixin,APIView):
     )
     
     def get(self, request, *args, **kwargs):
-        # Extract the 'ids' parameter from the query parameters
+        
         ids = request.query_params.get('ids', '')
 
         # Split the 'ids' parameter by commas and convert to integers
@@ -914,26 +880,26 @@ class RecruitmentRequestBatchDetailView(ActionLoggingMixin,APIView):
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
-            user=request.user if request.user.is_authenticated else None,
+            user=request.user,
             action_type="Error",
             model_name="RecruitmentRequest",
             description="Invalid ID format in request"
             )
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Query the Housekeeper objects with the given IDs
+        
         housekeepers = RecruitmentRequest.objects.filter(id__in=uuid_list)
 
-        # Serialize the data
+        
         serializer = RecruitmentRequestSerializer(housekeepers, many=True)
         self.log_action(
-            user=request.user if request.user.is_authenticated else None,
+            user=request.user,
             action_type="Retrieved",
             model_name="RecruitmentRequest",
             description=f"Successfully retrieved {len(housekeepers)} HireRequests for IDs: {ids}"
         )
         
-        # Return the serialized data
+       
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
@@ -959,7 +925,7 @@ class RecruitmentRequestBatchDetailView(ActionLoggingMixin,APIView):
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
-            user=request.user if request.user.is_authenticated else None,
+            user=request.user, 
             action_type="Error",
             model_name="RecruitmentRequest",
             description="Invalid ID format in request"
@@ -969,7 +935,7 @@ class RecruitmentRequestBatchDetailView(ActionLoggingMixin,APIView):
         
         count, _ = RecruitmentRequest.objects.filter(id__in=uuid_list).delete()
         self.log_action(
-        user=request.user if request.user.is_authenticated else None,
+        user=request.user,
         action_type="Deleted",
         model_name="RecruitmentRequest",
         description=f"Successfully deleted {count} RecruitmentRequest for IDs: {ids}"
@@ -981,10 +947,10 @@ class RecruitmentRequestBatchDetailView(ActionLoggingMixin,APIView):
 
     
 
-class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
+class RecruitmentRequestListCreateView(MethodBasedPermissionsMixin,ActionLoggingMixin,generics.ListCreateAPIView):
     queryset = RecruitmentRequest.objects.all()
     serializer_class = RecruitmentRequestSerializer
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]
     
     
     def get_queryset(self):
@@ -998,7 +964,7 @@ class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPI
     
     def get(self, request, *args, **kwargs):
         # Log the action  
-        user = request.user if request.user.is_authenticated else None
+        user = request.user,
         self.log_action(
             user=user,
             action_type="Listed",
@@ -1013,7 +979,7 @@ class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPI
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         
-        user = request.user if request.user.is_authenticated else None
+        user = request.user,
         self.log_action(
             user=user,
             action_type="Created",
@@ -1043,16 +1009,16 @@ class RecruitmentRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPI
      
 
 
-class RecruitmentRequestDetailView(generics.RetrieveUpdateDestroyAPIView):
+class RecruitmentRequestDetailView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
     queryset = RecruitmentRequest.objects.all()
     serializer_class = RecruitmentRequestSerializer
-    permission_classes = [AllowAny] 
+    # permission_classes = [AllowAny] 
     
     
     ########## updating ################################
-class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
+class RecruitmentBatchStatusUpdateView(MethodBasedPermissionsMixin,ActionLoggingMixin,APIView):
     serializer_class= UpdateHireRequest
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
@@ -1077,7 +1043,7 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
         new_status_name = request.query_params.get('status', '')
         
         self.log_action(
-        user=request.user if request.user.is_authenticated else None,
+        user=request.user,
         action_type="Patch Requested",
         model_name="RecruitmentRequest",
         description=f"Patch request with IDs: {ids} and new status: {new_status_name}"
@@ -1089,7 +1055,7 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
-            user=request.user if request.user.is_authenticated else None,
+            user=request.user,
             action_type="Error",
             model_name="RecruitmentRequest",
             description="Invalid ID format in patch request"
@@ -1104,7 +1070,7 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
             new_status = Status.objects.get(Status=new_status_name)
         except Status.DoesNotExist:
             self.log_action(
-            user=request.user if request.user.is_authenticated else None,
+            user=request.user,
             action_type="Error",
             model_name="RecruitmentRequest",
             description=f"Status '{new_status_name}' does not exist."
@@ -1116,7 +1082,7 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
 
         if not Recruitment.exists():
             self.log_action(
-            user=request.user if request.user.is_authenticated else None,
+            user=request.user,
             action_type="Error",
             model_name="RecruitmentRequest",
             description="No Recruitment Requests found for the provided IDs."
@@ -1127,7 +1093,7 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
         Recruitment.update(status=new_status)
         
         self.log_action(
-        user=request.user if request.user.is_authenticated else None,
+        user=request.user,
         action_type="Updated",
         model_name="RecruitmentRequest",
         description=f"Successfully updated status for IDs: {ids} to {new_status_name}"
@@ -1146,13 +1112,11 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
                 housekeeper.is_available = True
                 housekeeper.save()
             self.log_action(
-            user=request.user if request.user.is_authenticated else None,
+            user=request.user,
             action_type="Updated",
             model_name="RecruitmentRequest",
             description=f"Successfully updated status for IDs: {ids} to {new_status_name}"
-    )
-                
-        
+    ) 
                    
         return Response({"message": "Status updated successfully."}, status=status.HTTP_200_OK)
         
@@ -1163,8 +1127,8 @@ class RecruitmentBatchStatusUpdateView(ActionLoggingMixin,APIView):
 ########################################################################################################
 
 
-class TransferRequestBatchDetailView(ActionLoggingMixin,APIView):
-    permission_classes = [AllowAny]
+class TransferRequestBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMixin,APIView):
+    # permission_classes = [AllowAny]
     serializer_class = DummyTransferRequestSerializer
      
     @swagger_auto_schema(
@@ -1258,10 +1222,10 @@ class TransferRequestBatchDetailView(ActionLoggingMixin,APIView):
     
     
     
-class TransferRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIView):
+class TransferRequestListCreateView(MethodBasedPermissionsMixin,ActionLoggingMixin,generics.ListCreateAPIView):
     queryset = TransferRequest.objects.all()
     serializer_class = TransferRequestSerializer
-    permission_classes = [AllowAny] 
+    # permission_classes = [AllowAny] 
     
     
     def get_queryset(self):
@@ -1320,16 +1284,18 @@ class TransferRequestListCreateView(ActionLoggingMixin,generics.ListCreateAPIVie
 
     
 
-class TransferRequestDetailView(generics.RetrieveUpdateDestroyAPIView):
+class TransferRequestDetailView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
     queryset = TransferRequest.objects.all()
     serializer_class = TransferRequestSerializer
     permission_classes = [AllowAny] 
     
 
     
-class TransferBatchStatusUpdateView(ActionLoggingMixin,APIView):
+class TransferBatchStatusUpdateView(MethodBasedPermissionsMixin,ActionLoggingMixin,APIView):
     serializer_class= UpdateHireRequest
-    permission_classes = [AllowAny]
+    
+ 
+    
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
@@ -1349,6 +1315,7 @@ class TransferBatchStatusUpdateView(ActionLoggingMixin,APIView):
     
     @transaction.atomic
     def patch(self, request, *args, **kwargs):
+        
         
         ids = request.query_params.get('ids', '')
         new_status_name = request.query_params.get('status', '')
@@ -1440,12 +1407,39 @@ class TransferBatchStatusUpdateView(ActionLoggingMixin,APIView):
 class TaxesCreateView(generics.ListCreateAPIView):
     queryset = Taxes.objects.all()
     serializer_class = TaxesSerializer
-    permission_classes = [AllowAny] 
+    permission_classes = [RolePermission]
+ 
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            self.required_permissions = ['read']
+        elif self.request.method == 'POST':
+            self.required_permissions = ['create']
+        return super().get_permissions()
+ 
+    
+    
 
 class TaxesDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Taxes.objects.all()
     serializer_class = TaxesSerializer
-    permission_classes = [AllowAny] 
+    permission_classes = [RolePermission]
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            self.required_permissions = ['read']
+        elif self.request.method == 'POST':
+            self.required_permissions = ['create']
+        elif self.request.method == 'PUT':
+            self.required_permissions = ['update']
+        elif self.request.method == 'PATCH':
+            self.required_permissions = ['update']
+        elif self.request.method == 'DELETE':
+            self.required_permissions = ['delete']
+        else:
+            self.required_permissions = []
+
+        return super().get_permissions()
         
     
     

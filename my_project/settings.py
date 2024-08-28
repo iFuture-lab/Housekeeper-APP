@@ -227,7 +227,6 @@ MIDDLEWARE = [
      'allauth.account.middleware.AccountMiddleware',
      'whitenoise.middleware.WhiteNoiseMiddleware',
  
-     
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True

@@ -181,7 +181,7 @@ class EmploymentType(models.Model):
     
 class Housekeeper(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    Name= models.CharField(max_length=50,unique=True)
+    Name= models.CharField(max_length=50)
     Age= models.IntegerField()
     gender_CHOICES = {
     "female": "Female",
@@ -306,21 +306,21 @@ class HireRequest(models.Model):
     tax_id = models.ForeignKey(Taxes, null=True, on_delete=models.CASCADE,blank=True,default=get_default_taxes)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
     
-    objects = SoftDeleteManager()  # Custom manager
-    all_objects = models.Manager()  # Default manager to access all records, including deleted
+    objects = SoftDeleteManager()  
+    all_objects = models.Manager()  
 
     def delete(self):
-       #soft deleting
+   
         self.deleted_at = timezone.now()
         self.save()
 
     def restore(self):
-        # Restore a soft-deleted record 
+       
         self.deleted_at = None
         self.save()
 
     def hard_delete(self):
-        # delete the record in real 
+        
         super().delete()
 
     def __str__(self):
@@ -368,7 +368,7 @@ class HireRequest(models.Model):
                 self.custom_package_id = None
                 self.total_price=0.0
                 
-            # # Raise a validation error to be caught and displayed
+           
             #     raise ValidationError('No matching PericePerNationality found. Please ensure the PericePerNationality is set correctly.')
 
         super().save(*args, **kwargs)

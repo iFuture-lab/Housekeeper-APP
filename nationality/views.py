@@ -11,8 +11,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from uuid import UUID
 from django.db import IntegrityError
+from housekeeper.permissions import MethodBasedPermissionsMixin
 
-class NationalityCreateView(generics.ListCreateAPIView):
+class NationalityCreateView(MethodBasedPermissionsMixin,generics.ListCreateAPIView):
     queryset = Nationallity.objects.all()
     serializer_class = NationalitySerializer
     permission_classes = [AllowAny]
@@ -31,7 +32,7 @@ class NationalityCreateView(generics.ListCreateAPIView):
 
    
 
-class NationalityRequestDetailView(generics.RetrieveUpdateDestroyAPIView):
+class NationalityRequestDetailView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
     queryset = Nationallity.objects.all()
     serializer_class = NationalitySerializer
     permission_classes = [AllowAny]
@@ -48,7 +49,7 @@ class NationalityRequestDetailView(generics.RetrieveUpdateDestroyAPIView):
     
 ################# Get manay & delete manay ################################
 
-class NationalitiesBatchDetailView(APIView):
+class NationalitiesBatchDetailView(MethodBasedPermissionsMixin,APIView):
     permission_classes = [AllowAny]
     serializer_class = NationalitySerializer
      
@@ -64,23 +65,22 @@ class NationalitiesBatchDetailView(APIView):
     )
     
     def get(self, request, *args, **kwargs):
-        # Extract the 'ids' parameter from the query parameters
+        
         ids = request.query_params.get('ids', '')
 
-        # Split the 'ids' parameter by commas and convert to integers
+      
         try:
             # ids = list(map(int, ids.split(',')))
             uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Query the Housekeeper objects with the given IDs
+  
         national = Nationallity.objects.filter(id__in=uuid_list)
 
-        # Serialize the data
+       
         serializer = NationalitySerializer(national, many=True)
-        
-        # Return the serialized data
+   
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
@@ -108,7 +108,7 @@ class NationalitiesBatchDetailView(APIView):
         except ValueError:
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Delete the Housekeeper objects with the given IDs
+        
         count, _ = Nationallity.objects.filter(id__in=uuid_list).delete()
 
         # Return the count of deleted objects

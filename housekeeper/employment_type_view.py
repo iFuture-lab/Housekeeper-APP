@@ -9,6 +9,7 @@ from drf_yasg import openapi
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from .permissions import MethodBasedPermissionsMixin
 
 
 #################serilizer#########################################
@@ -17,15 +18,15 @@ class EmploymentTypeSerializer(serializers.ModelSerializer):
         model = EmploymentType
         fields = ['id', 'name']
         
-class EmploymentTypeCreateView(generics.ListCreateAPIView):
+class EmploymentTypeCreateView(MethodBasedPermissionsMixin,generics.ListCreateAPIView):
     queryset = EmploymentType.objects.all()
     serializer_class = EmploymentTypeSerializer
-    permission_classes = [AllowAny] 
+    # permission_classes = [AllowAny] 
 
-class EmploymentTypeDetailView(generics.RetrieveUpdateDestroyAPIView):
+class EmploymentTypeDetailView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
     queryset = EmploymentType.objects.all()
     serializer_class = EmploymentTypeSerializer
-    permission_classes = [AllowAny] 
+    # permission_classes = [AllowAny] 
     
     
     
