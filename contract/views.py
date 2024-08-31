@@ -25,6 +25,9 @@ from rest_framework import status
 from housekeeper.models import HireRequest,TransferRequest,RecruitmentRequest,Status
 from service_type.models import ServiceType
 
+
+
+
 class UserInterestCreateView(generics.CreateAPIView):
     queryset = UserInterest.objects.all()
     serializer_class = UserInterestSerializer
@@ -35,7 +38,6 @@ class UserInterestListView(generics.ListAPIView):
     serializer_class = UserInterestSerializer
     permission_classes = [AllowAny]
     
-
     def get_queryset(self):
         return UserInterest.objects.filter(user=self.request.user)
     

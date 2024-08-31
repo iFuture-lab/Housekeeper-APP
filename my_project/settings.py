@@ -339,3 +339,12 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+        }
+    }
+}

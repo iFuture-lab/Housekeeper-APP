@@ -480,6 +480,8 @@ class HousekeeperIDSerializer(serializers.Serializer):
 class CombinedRequestsSerializer(serializers.Serializer):
    
     requests = serializers.DictField(child=serializers.ListSerializer(child=serializers.DictField()))
+    
+  
     # hire_requests = serializers.ListSerializer(child=HireRequestSerializer())
     # recruitment_requests = serializers.ListSerializer(child=RecruitmentRequestSerializer())
     # transfer_requests = serializers.ListSerializer(child=TransferRequestSerializer())

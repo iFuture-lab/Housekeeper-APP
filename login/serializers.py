@@ -11,11 +11,15 @@ from django.contrib.auth.tokens import default_token_generator
 
 from django.contrib.auth import get_user_model
 
+from datetime import date
+
 User = get_user_model()
 from .utils import send_otp, verify_otp
 
 
 # UserModel = get_user_model()
+
+########################### this file handel the API data ###############################################
 
 
 ####################################Admin Reset Password#############################
@@ -66,7 +70,7 @@ class PasswordResetSerializer(serializers.Serializer):
 
     def save(self):
         token = default_token_generator.make_token(self.user)
-        # You can send this token via SMS to the user's phone number
+        # send this token via SMS to the user's phone number
         return token
     
 class PasswordResetConfirmSerializer(serializers.Serializer):
@@ -95,38 +99,43 @@ class RegisterSerializercustomer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
     #otp = serializers.CharField(write_only=True, required=True)
+    
+    dateOfBirth = serializers.DateField()
+
+    def validate_dateOfBirth(self, value):
+        if value > date.today():
+            raise serializers.ValidationError('Date of birth cannot be in the future.')
+        return value
 
 
     class Meta:
-        ref_name = 'RegisterSerializercustomer'  # Explicitly set ref_name
+        ref_name = 'RegisterSerializercustomer'  
         model = CustomUser
         #model = UserModel
-        fields = ('fullName','phone_number','password','password2','dateOfBirth', 'nationalID','email')
+        fields = ('fullName','phone_number','password','password2','dateOfBirth','email')
         extra_kwargs = {
             'dateOfBirth': {'required': True},
-            'nationalID': {'required': True},
             'phone_number': {'required': True},
             'fullName': {'required': True}
-            
         }
         
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
         
-        # Verify OTP
-        # if not verify_otp(attrs['phone_number'], attrs['otp']):
-        #     raise serializers.ValidationError({"otp": "Invalid or expired OTP."})
+        
+    
         return attrs
 
     def create(self, validated_data):
         user = CustomUser.objects.create_user(
             fullName=validated_data['fullName'],
             phone_number=validated_data['phone_number'],
-            nationalID=validated_data['nationalID'],
+            # nationalID=validated_data['nationalID'],
             dateOfBirth=validated_data['dateOfBirth'],
             password=validated_data['password'],
             email=validated_data['email'],
+            
         )
         return user
     
@@ -162,7 +171,7 @@ class LoginSerializercustomer(serializers.Serializer):
         return data
     
     class Meta:
-        ref_name = 'LoginSerializercustomer'  # Explicitly set ref_name
+        ref_name = 'LoginSerializercustomer'  
         
         
         
@@ -176,9 +185,11 @@ class LoginSerializercustomer(serializers.Serializer):
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
+    
+ 
 
     class Meta:
-        ref_name = 'RegisterSerializer'  # Explicitly set ref_name
+        ref_name = 'RegisterSerializer'  
         model = User
         fields = ('username', 'password','password2', 'email', 'first_name', 'last_name')
         extra_kwargs = {

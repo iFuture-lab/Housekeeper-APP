@@ -9,6 +9,10 @@ import time
 
 
 
+################################## SMS API Integration ########################################################## 
+
+
+
 def generate_otp():
     return random.randint(100000, 999999)
 
@@ -24,7 +28,7 @@ def send_otp(phone_number, force_resend=False,test_mode=False):
         return False, "Please wait before requesting a new OTP."
 
     #otp = generate_otp()
-    otp = '111111' if test_mode else generate_otp()
+    otp = '0000' if test_mode else generate_otp()
     
     try:
         if not test_mode:

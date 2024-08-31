@@ -11,6 +11,10 @@ from .models import CustomUser
 import uuid
 from django.contrib.auth import get_user_model
 
+
+
+############################### this class inherit the base Authentication and create Authentication for mobile users for token #######################################
+
 class CustomUserAuthentication(BaseAuthentication):
 
     def authenticate(self, request):
@@ -85,7 +89,7 @@ class CustomUserAuthentication(BaseAuthentication):
 
 
 
-###########token#############################################
+##################### this class also inherit JWTAuthentication for mobile user  #############################################
 
 class CustomJWTAuthentication(JWTAuthentication):
     def __init__(self, *args, **kwargs):

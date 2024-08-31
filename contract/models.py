@@ -10,7 +10,9 @@ from django.db.models import IntegerField,Max
 from django.utils import timezone
 from login.models import CustomUser
 from django.core.exceptions import ValidationError
-from housekeeper.models import HireRequest,TransferRequest,RecruitmentRequest
+from housekeeper.models import HireRequest,TransferRequest,RecruitmentRequest,EmploymentType
+from nationality.models import Nationallity
+
 
 
 
@@ -107,29 +109,28 @@ class Contract(models.Model):
     
     
     
-from django.db import models
-from django.contrib.auth import get_user_model
 
-
-User = get_user_model()
 
 class UserInterest(models.Model):
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     INTEREST_STATUS_CHOICES = [
         ('clicked', 'Clicked'),
         ('abandoned', 'Abandoned'),
     ]
-
-    interest_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='interests')
-    service_id = models.CharField(max_length=100) 
+    service = models.ForeignKey(ServiceType, on_delete=models.CASCADE, related_name='user_interests')
     timestamp = models.DateTimeField(default=timezone.now)
-    status = models.CharField(max_length=20, choices=INTEREST_STATUS_CHOICES,blank=True,null=True)
+    status = models.CharField(max_length=20, choices=INTEREST_STATUS_CHOICES, blank=True, null=True)
     device_info = models.CharField(max_length=255, blank=True, null=True)
     session_data = models.JSONField(blank=True, null=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
+    nationality = models.ForeignKey(Nationallity, on_delete=models.SET_NULL, null=True, blank=True)
+    employment_type = models.ForeignKey(EmploymentType, on_delete=models.SET_NULL, null=True, blank=True)
     
-    objects = SoftDeleteManager()  # Custom manager
-    all_objects = models.Manager()  # Default manager to access all records, including deleted
+    
+    objects = SoftDeleteManager()  
+    all_objects = models.Manager()  
     
 
     def delete(self):
@@ -147,7 +148,7 @@ class UserInterest(models.Model):
         super().delete()
 
     def __str__(self):
-        return f'Interest {self.interest_id} by User {self.user_id}'
+        return f"{self.user.fullName} - {self.service.name} - {self.status}"
 
     class Meta:
         ordering = ['-timestamp']

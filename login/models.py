@@ -9,6 +9,9 @@ from django.utils import timezone
 from django.conf import settings
 import uuid
 from django.core.validators import EmailValidator
+from django.core.exceptions import ValidationError
+from datetime import date
+
 
 
 
@@ -57,7 +60,7 @@ class BlacklistedToken(models.Model):
 
     def __str__(self):
         return self.token
-############ User model for Customers #########################
+############ User model for Customers(mobile users) #########################
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, fullName, phone_number, password=None, password2=None, **extra_fields):
@@ -82,19 +85,29 @@ class CustomUserManager(BaseUserManager):
             raise ValueError('Superuser must have is_superuser=True.')
 
         return self.create_user(fullName, phone_number, password, **extra_fields)
+    
+    
+    
+    
+def validate_saudi_national_id(value):
+    if len(value) != 10:
+        raise ValidationError('National ID must be 10 digits long.')
+    if not value.isdigit():
+        raise ValidationError('National ID must be only Numbers.')
+
 
 
 
 class CustomUser(AbstractBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    fullName = models.CharField(max_length=150, unique=True)
-    password = models.CharField(max_length=128)  # Ensure you hash passwords properly
-    # password2 = models.CharField(max_length=128)  # Ensure you hash passwords properly
+    fullName = models.CharField(max_length=150)
+    password = models.CharField(max_length=128)  # ensure to hash password properly
+    # password2 = models.CharField(max_length=128)  
     phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
     phone_number = models.CharField(validators=[phone_regex], max_length=17, blank=True,unique=True) 
-    email=models.CharField(max_length=100,null=True, validators=[EmailValidator(message="Enter a valid email address.")])
+    email=models.CharField(max_length=100,null=True, validators=[EmailValidator(message="Enter a valid email address.")],blank=True)
     dateOfBirth = models.DateField(default=timezone.now) 
-    nationalID=  models.CharField(max_length=100,default="1234567890o")
+    # nationalID=  models.CharField(max_length=100,validators=[validate_saudi_national_id])
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_confirmed= models.BooleanField(default=False)
@@ -106,8 +119,7 @@ class CustomUser(AbstractBaseUser):
     objects = CustomUserManager()
     
     soft_deleted = SoftDeleteManager()
-    all_objects = models.Manager()  # Default manager to access all records, including deleted
-
+    all_objects = models.Manager()  
     def delete(self):
        #soft deleting
         self.deleted_at = timezone.now()
@@ -126,6 +138,19 @@ class CustomUser(AbstractBaseUser):
         return self.fullName
     
     
+    # def clean(self):
+    #     super().clean()
+    #     if self.dateOfBirth > date.today():
+    #         raise ValidationError('Date of birth cannot be in the future.')
+
+    # def save(self, *args, **kwargs):
+    #     self.full_clean()  # Ensure validation is performed before saving
+    #     super().save(*args, **kwargs)
+        
+        
+    
+    
+################################## this model to store the otp messaage in database #############################################################
     
 class OtpMessage(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

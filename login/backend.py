@@ -5,6 +5,8 @@ from django.contrib.auth.backends import ModelBackend
 
 # UserModel = get_user_model()
 # User=CustomUser
+
+##########################django by default authenticate with username this function use phonenumber as authentication methods ###################################################
 class PhoneNumberBackend(BaseBackend):
     def authenticate(self, request, phone_number=None, password=None, **kwargs):
         try:

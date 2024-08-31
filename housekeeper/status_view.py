@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .permissions import MethodBasedPermissionsMixin
+from uuid import UUID
 
 class StatusCreateView(MethodBasedPermissionsMixin,generics.ListCreateAPIView):
     queryset = Status.objects.all()
@@ -46,12 +47,13 @@ class StatusBatchDetailView(MethodBasedPermissionsMixin,APIView):
 
  
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
        
-        state = Status.objects.filter(id__in=ids)
+        state = Status.objects.filter(id__in=uuid_list)
 
         serializer = StatusSerializer(state, many=True)
         
@@ -77,12 +79,14 @@ class StatusBatchDetailView(MethodBasedPermissionsMixin,APIView):
 
        
         try:
-            ids = list(map(int, ids.split(',')))
+            # ids = list(map(int, ids.split(',')))
+            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            
         except ValueError:
             return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
 
         
-        count, _ =Status.objects.filter(id__in=ids).delete()
+        count, _ =Status.objects.filter(id__in=uuid_list).delete()
 
 
         return Response({"deleted": count}, status=status.HTTP_204_NO_CONTENT)

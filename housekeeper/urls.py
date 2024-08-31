@@ -25,7 +25,7 @@ from .employment_type_view import EmploymentTypeCreateView, EmploymentTypeBatchD
 urlpatterns = [
     path('housekeepers/', HousekeeperListCreateView.as_view(), name='housekeeper-list-create'),
     path('housekeepers/<uuid:pk>/', HousekeeperDetailView.as_view(), name='housekeeper-detail'),
-    path('housekeeper/ids/', HousekeeperIDsView.as_view(), name='housekeeper-ids'),
+    # path('housekeeper/ids/', HousekeeperIDsView.as_view(), name='housekeeper-ids'),
     path('housekeepers/batch/', HousekeeperBatchDetailView.as_view(), name='housekeeper-batch-detail'),
     #path('housekeepers/DeleteMany/', HousekeeperBatchDeleteView.as_view(), name='housekeeper-delete-detail'),
     path('housekeepers/search/', AvailableHousekeeper.as_view(), name='available-housekeeper-list'),
@@ -71,8 +71,8 @@ urlpatterns = [
     # path('action-log', include(router.urls)),
     
     
-    path('Taxes/', TaxesCreateView.as_view(), name='taxes-create'),
-    path('Taxes/<uuid:pk>/', TaxesDetailView.as_view(), name='taxes-detail'),
+    path('taxes/', TaxesCreateView.as_view(), name='taxes-create'),
+    path('taxes/<uuid:pk>/', TaxesDetailView.as_view(), name='taxes-detail'),
     
     
     

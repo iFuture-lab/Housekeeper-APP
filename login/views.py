@@ -54,8 +54,13 @@ from .utils import send_otp, verify_otp,resend_otp
 from django.core.cache import cache
 from .authentication import CustomJWTAuthentication,CustomUserAuthentication
 from role_per_user.models import RolePerClient,RolePerUser
+from role.models import Role
 
 User = get_user_model()
+
+
+
+######################################## API views ####################################################
 
 
 ##################password Admin#####################################
@@ -110,7 +115,7 @@ class PasswordResetConfirmView(generics.GenericAPIView):
 
         
         
-########################### clients views #########################################
+########################### clients views for testing with javascripts #########################################
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def login_view(request):
@@ -199,8 +204,20 @@ class RegisterView(generics.CreateAPIView):
         
         user = serializer.save(is_confirmed=False)  # Create user but keep inactive
         phone_number = user.phone_number
+        # Retrieve the existing role and assign it to the user
+        default_role_name = "mobile user"  # Replace with the actual role name
+        role_instance = Role.objects.get(name=default_role_name)
+        print(role_instance)
         
-        test_mode = request.data.get('test_mode', False)  # Default to False if not provided
+        # Assign the user to the role within RolePerClient
+        # role_per_client = RolePerClient.objects.create(role=role_instance)
+        role_per_client, created = RolePerClient.objects.get_or_create(
+            role=role_instance
+        )
+        role_per_client.clients.add(user)
+        
+        
+        test_mode = request.data.get('test_mode', False)  # Default to False if not provided just for testing 
         success, otp_or_message = send_otp(phone_number, test_mode=test_mode)
         
         if success:
@@ -210,7 +227,7 @@ class RegisterView(generics.CreateAPIView):
                 'user_id': user.id
             }, status=status.HTTP_201_CREATED)
         else:
-            user.delete()  # Delete the user if OTP sending failed
+            user.delete()  
             return Response({
                 'message': 'can not send otp'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -231,7 +248,7 @@ class VerifyOTPView(APIView):
             type=openapi.TYPE_OBJECT,
             properties={
                 'otp': openapi.Schema(type=openapi.TYPE_STRING),
-                'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                'user_id': openapi.Schema(type=openapi.TYPE_STRING),
                 'test_mode': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Set to true to simulate verification without actual OTP validation'),
             },
             required=['otp', 'user_id']
@@ -286,7 +303,7 @@ class ResendOtpView(APIView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                'user_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='The ID of the user to resend OTP to'),
+                'user_id': openapi.Schema(type=openapi.TYPE_STRING, description='The ID of the user to resend OTP to'),
                 'test_mode': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Set to true to simulate OTP sending without actually sending it'),
             },
             required=['user_id']
@@ -441,7 +458,8 @@ class LoginView(generics.GenericAPIView):
                 'user_id': str(user.id)
             })
             
-            client_roles = RolePerClient.objects.filter(clients=user).values_list('role', flat=True).first()
+            # client_roles = RolePerClient.objects.filter(clients=user).values_list('role', flat=True).first()
+            roles = RolePerClient.objects.filter(clients=user).values_list('role__name', flat=True)
             return Response({
                 'phone_number': user.phone_number,
                 'refresh': str(refresh),
@@ -452,7 +470,7 @@ class LoginView(generics.GenericAPIView):
                     'email': user.email,
                     'nationalID': user.nationalID,
                     'dateOfBirth':user.dateOfBirth,
-                    'role':client_roles
+                    'role':roles
                 }
             })
         else:
@@ -478,7 +496,7 @@ class TokenValidationView(APIView):
                 'username': user.fullName,
                 'email': user.email,
                 'phone_number':user.phone_number
-                # Add other user fields you want to include
+               
             }
             return Response({
                 "detail": "Token is valid",

@@ -4,7 +4,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 
 
-
+#################################### register the models in database ###########################################
 
 # class CustomUserAdmin(UserAdmin):
     
