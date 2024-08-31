@@ -11,17 +11,17 @@ from housekeeper.permissions import MethodBasedPermissionsMixin
 class RoleCreateView(MethodBasedPermissionsMixin,generics.ListCreateAPIView):
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]
     
     
 class RoleDetailView(MethodBasedPermissionsMixin,generics.RetrieveAPIView):
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]
     
     
     
 class PermissionCreateView(MethodBasedPermissionsMixin,generics.ListCreateAPIView):
     queryset = Permission.objects.all()
     serializer_class = PermissioSerializer
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]

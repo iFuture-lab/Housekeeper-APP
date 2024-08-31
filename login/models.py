@@ -153,11 +153,12 @@ class CustomUser(AbstractBaseUser):
 ################################## this model to store the otp messaage in database #############################################################
     
 class OtpMessage(models.Model):
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     body = models.TextField()
-    is_active = models.BooleanField(default=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
+    
     
     objects = SoftDeleteManager()  
     all_objects = models.Manager()  
@@ -178,6 +179,15 @@ class OtpMessage(models.Model):
 
     def __str__(self):
         return self.name
+    
+    
+    
+class OTPLog(models.Model):
+    phone_number = models.CharField(max_length=20)
+    otp = models.CharField(max_length=10)
+    request_body = models.TextField(blank=True, null=True)  
+    response_body = models.TextField(blank=True, null=True) 
+    created_at = models.DateTimeField(auto_now_add=True)
     
 
     

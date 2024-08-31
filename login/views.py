@@ -198,39 +198,77 @@ class RegisterView(generics.CreateAPIView):
         }
     )
 
+    # def post(self, request, *args, **kwargs):
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+        
+    #     user = serializer.save(is_confirmed=False)  # Create user but keep inactive
+    #     phone_number = user.phone_number
+    #     # Retrieve the existing role and assign it to the user
+    #     default_role_name = "mobile user"  # Replace with the actual role name
+    #     role_instance = Role.objects.get(name=default_role_name)
+    #     print(role_instance)
+        
+    #     # Assign the user to the role within RolePerClient
+    #     # role_per_client = RolePerClient.objects.create(role=role_instance)
+    #     role_per_client, created = RolePerClient.objects.get_or_create(
+    #         role=role_instance
+    #     )
+    #     role_per_client.clients.add(user)
+        
+        
+    #     test_mode = request.data.get('test_mode', False)  # Default to False if not provided just for testing 
+    #     success, otp_or_message = send_otp(phone_number, test_mode=test_mode)
+        
+    #     if success:
+    #         # Save OTP and phone number in OTPVerification model
+    #         return Response({
+    #             'message': 'User registered successfully. OTP sent. Please verify the OTP to activate your account.',
+    #             'user_id': user.id
+    #         }, status=status.HTTP_201_CREATED)
+    #     else:
+    #         user.delete()  
+    #         return Response({
+    #             'message': 'can not send otp'
+    #         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        user = serializer.save(is_confirmed=False)  # Create user but keep inactive
-        phone_number = user.phone_number
-        # Retrieve the existing role and assign it to the user
-        default_role_name = "mobile user"  # Replace with the actual role name
-        role_instance = Role.objects.get(name=default_role_name)
-        print(role_instance)
+        try:
+            user = serializer.save(is_confirmed=False)  # Create user but keep inactive
+            phone_number = user.phone_number
+            
+            # Retrieve the existing role and assign it to the user
+            default_role_name = "mobile user"  # Replace with the actual role name
+            role_instance = Role.objects.get(name=default_role_name)
+            
+            # Assign the user to the role within RolePerClient
+            role_per_client, created = RolePerClient.objects.get_or_create(
+                role=role_instance
+            )
+            role_per_client.clients.add(user)
+            
+            # Send OTP and handle success or failure
+            test_mode = request.data.get('test_mode', False)  # Default to False if not provided just for testing
+            success, otp_or_message = send_otp(phone_number, test_mode=test_mode)
+            
+            if success:
+                return Response({
+                    'message': 'User registered successfully. OTP sent. Please verify the OTP to activate your account.',
+                    'user_id': user.id
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response({'error': otp_or_message}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Assign the user to the role within RolePerClient
-        # role_per_client = RolePerClient.objects.create(role=role_instance)
-        role_per_client, created = RolePerClient.objects.get_or_create(
-            role=role_instance
-        )
-        role_per_client.clients.add(user)
-        
-        
-        test_mode = request.data.get('test_mode', False)  # Default to False if not provided just for testing 
-        success, otp_or_message = send_otp(phone_number, test_mode=test_mode)
-        
-        if success:
-            # Save OTP and phone number in OTPVerification model
-            return Response({
-                'message': 'User registered successfully. OTP sent. Please verify the OTP to activate your account.',
-                'user_id': user.id
-            }, status=status.HTTP_201_CREATED)
-        else:
-            user.delete()  
-            return Response({
-                'message': 'can not send otp'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Role.DoesNotExist:
+            return Response({'error': 'Role not found.'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            # Log the exception for debugging purposes
+            logger.error(f"An error occurred: {e}", exc_info=True)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 

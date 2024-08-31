@@ -24,26 +24,29 @@ from django.db.models import Count
 from rest_framework import status
 from housekeeper.models import HireRequest,TransferRequest,RecruitmentRequest,Status
 from service_type.models import ServiceType
+from housekeeper.permissions import RolePermission,MethodBasedPermissionsMixin
+
+import uuid
 
 
 
 
-class UserInterestCreateView(generics.CreateAPIView):
+class UserInterestCreateView(MethodBasedPermissionsMixin,generics.CreateAPIView):
     queryset = UserInterest.objects.all()
     serializer_class = UserInterestSerializer
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]
 
 class UserInterestListView(generics.ListAPIView):
     queryset = UserInterest.objects.all()
     serializer_class = UserInterestSerializer
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]
     
     def get_queryset(self):
         return UserInterest.objects.filter(user=self.request.user)
     
     
-class UserInterestReportView(APIView):
-    permission_classes = [AllowAny]
+class UserInterestReportView(MethodBasedPermissionsMixin,APIView):
+    # permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         data = UserInterest.objects.values('status').annotate(total=Count('status'))
@@ -52,10 +55,40 @@ class UserInterestReportView(APIView):
     
 ####################contract#####################################
 
-class ContractCreateView(generics.CreateAPIView):
-    permission_classes = [AllowAny]
+class ContractsByRequester(MethodBasedPermissionsMixin, APIView):
+    serializer_class = ContractSerializer
+    
+    def get(self, request):
+        # Get the customer_id from the query parameters
+        customer_id = self.request.query_params.get('customer_id', None)
+        
+        if customer_id is None:
+            return Response({'error': 'customer_id query parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Convert the customer_id to a UUID object
+            customer_uuid = uuid.UUID(customer_id)
+        except ValueError:
+            return Response({'error': 'Invalid UUID format'}, status=status.HTTP_400_BAD_REQUEST)
+
+        print(f"Searching for contracts with customer_id: {customer_uuid}")
+        queryset = Contract.objects.filter(customer_id=customer_uuid)
+        print(f"Found contracts: {queryset}")
+
+        serializer = self.serializer_class(queryset, many=True)
+    
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+    
+
+class ContractCreateView(MethodBasedPermissionsMixin,generics.CreateAPIView):
+    # permission_classes = [AllowAny]
     queryset = Contract.objects.all()
     serializer_class = ContractSerializer
+    
+    
+    
       
     def perform_create(self, serializer):
         contract = serializer.save(status='Pending')
@@ -219,13 +252,13 @@ class ContractCreateView(generics.CreateAPIView):
         
 
 
-class ContractListView(generics.ListAPIView):
-    permission_classes = [AllowAny]
+class ContractListView(MethodBasedPermissionsMixin,generics.ListAPIView):
+    # permission_classes = [AllowAny]
     queryset = Contract.objects.all()
     serializer_class = ContractSerializer
 
-class ContractDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [AllowAny]
+class ContractDetailView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
+    # permission_classes = [AllowAny]
     queryset = Contract.objects.all()
     serializer_class = ContractSerializer
     
