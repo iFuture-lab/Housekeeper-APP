@@ -468,7 +468,7 @@ class LoginView(generics.GenericAPIView):
                     'id': str(user.id),
                     'username': user.fullName,
                     'email': user.email,
-                    'nationalID': user.nationalID,
+                    # 'nationalID': user.nationalID,
                     'dateOfBirth':user.dateOfBirth,
                     'role':roles
                 }
