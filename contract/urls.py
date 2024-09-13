@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import ContractCreateView, ContractListView, ContractDetailView,UserInterestCreateView, UserInterestListView, UserInterestReportView,ContractsByRequester
-
+from django.conf import settings
+from django.conf.urls.static import static
 urlpatterns = [
     path('contracts/', ContractListView.as_view(), name='contract-list'),
     path('contracts/create/', ContractCreateView.as_view(), name='contract-create'),
@@ -11,3 +12,7 @@ urlpatterns = [
     path('users-interests/report/', UserInterestReportView.as_view(), name='user-interest-report'),
     
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

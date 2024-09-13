@@ -83,7 +83,7 @@ class ContractsByRequester(MethodBasedPermissionsMixin, APIView):
     
 
 class ContractCreateView(MethodBasedPermissionsMixin,generics.CreateAPIView):
-    # permission_classes = [AllowAny]
+    permission_classes = [AllowAny]
     queryset = Contract.objects.all()
     serializer_class = ContractSerializer
     

@@ -14,7 +14,7 @@ from service_type.models import ServiceType
 from housekeeper.permissions import MethodBasedPermissionsMixin
 
 class PackageByRequestTypeView(MethodBasedPermissionsMixin,generics.ListAPIView):
-    # permission_classes = [AllowAny]
+    permission_classes = [AllowAny]
     serializer_class = CustomPackageSerializer
     
     def get_queryset(self):
@@ -47,7 +47,7 @@ class PackageRetrieveUpdateDestroyView(MethodBasedPermissionsMixin,generics.Retr
 class PackageCreateView(MethodBasedPermissionsMixin,generics.ListCreateAPIView):
     queryset = CustomPackage.objects.all()
     serializer_class = CustomPackageSerializer
-    # permission_classes = [AllowAny] 
+    permission_classes = [AllowAny] 
     
     def perform_create(self, serializer):
         

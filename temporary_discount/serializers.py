@@ -33,8 +33,8 @@ class PromotionCodeSerializer(serializers.ModelSerializer):
         
         
 class CustomPackageSerializer(serializers.ModelSerializer):
-    employment_type = EmploymentTypeSerializer()
-    request_type = ServiceTypeSerializer()
+    #employment_type = EmploymentTypeSerializer()
+    #request_type = ServiceTypeSerializer()
     nationalities_types= serializers.SerializerMethodField()
     
     def get_nationalities_types(self, obj):

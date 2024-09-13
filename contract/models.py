@@ -12,8 +12,10 @@ from login.models import CustomUser
 from django.core.exceptions import ValidationError
 from housekeeper.models import HireRequest,TransferRequest,RecruitmentRequest,EmploymentType
 from nationality.models import Nationallity
+from django.core.validators import FileExtensionValidator
 
-
+import base64
+from django.core.files.base import ContentFile
 
 
 class SoftDeleteManager(models.Manager):
@@ -34,21 +36,35 @@ class Contract(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     contract_number = models.CharField(max_length=5, blank=True)
     customer_id = models.ForeignKey(CustomUser,on_delete=models.CASCADE,)
-    package_details = models.ForeignKey(CustomPackage,on_delete=models.CASCADE,null=True)
-    payment_details = models.ForeignKey(Payment,on_delete=models.CASCADE,null=True)
-    contract_terms = models.TextField()
-    start_date = models.DateField(null=True,blank=True)
-    end_date = models.DateField(null=True,blank=True)
+    #package_details = models.ForeignKey(CustomPackage,on_delete=models.CASCADE,null=True)
+    #payment_details = models.ForeignKey(Payment,on_delete=models.CASCADE,null=True)
+    #contract_terms = models.TextField()
+    #start_date = models.DateField(null=True,blank=True)
+    #end_date = models.DateField(null=True,blank=True)
     status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Completed', 'Completed'),('Rejected', 'Rejected'),('Approved', 'Approved')],null=True,blank=True)
     request_type = models.ForeignKey(ServiceType,on_delete=models.CASCADE,null=True,blank= True)
     deleted_at = models.DateTimeField(null=True, blank=True)
-    contract_file = models.TextField(null=True, blank=True)
+    contract_file = models.FileField(upload_to='contracts/', null=True, blank=True, validators=[FileExtensionValidator(['pdf'])])
     hire_request = models.ForeignKey(HireRequest, on_delete=models.CASCADE, null=True, blank=True)
     transfer_request = models.ForeignKey(TransferRequest, on_delete=models.CASCADE, null=True, blank=True)
     recruitment_request= models.ForeignKey(RecruitmentRequest, on_delete=models.CASCADE, null=True, blank=True)
     
     objects = SoftDeleteManager()  
     all_objects = models.Manager()  
+
+
+    def save_pdf_from_base64(self, base64_pdf_data, filename):
+        """Save PDF from base64 string."""
+        if base64_pdf_data:
+            format, pdfstr = base64_pdf_data.split(';base64,')  # Split base64 string
+            ext = format.split('/')[-1]  # Get the file extension (should be 'pdf')
+            
+            # Ensure the extension is 'pdf'
+            if ext == 'pdf':
+                # Decode the base64 string and save the PDF file
+                self.contract_file.save(f'{filename}.{ext}', ContentFile(base64.b64decode(pdfstr)), save=False)
+            else:
+                raise ValueError("Provided base64 string is not a PDF file")
 
     def delete(self):
        #soft deleting
