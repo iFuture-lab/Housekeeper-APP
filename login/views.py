@@ -284,8 +284,8 @@ class RegisterView(generics.CreateAPIView):
                     'message': 'User registered successfully. OTP sent. Please verify the OTP to activate your account.',
                     'user_id': user.id
                 }, status=status.HTTP_201_CREATED)
-            else:
-                return Response({'error': otp_or_message}, status=status.HTTP_400_BAD_REQUEST)
+            # else:
+            #     return Response({'error': otp_or_message}, status=status.HTTP_400_BAD_REQUEST)
         
         except Role.DoesNotExist:
             return Response({'error': 'Role not found.'}, status=status.HTTP_400_BAD_REQUEST)
