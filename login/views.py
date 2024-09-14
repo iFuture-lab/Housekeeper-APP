@@ -49,7 +49,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from .models import BlacklistedToken
-from .utils import send_otp, verify_otp,resend_otp
+from .utils import send_otp, verify_otp,resend_otp,send_password_reset_token,verify_password_reset_token
 
 from django.core.cache import cache
 from .authentication import CustomJWTAuthentication,CustomUserAuthentication
@@ -97,9 +97,27 @@ class PasswordResetView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        token = serializer.save()
-        # Here you should send the token to the user's phone number via SMS
-        return Response({"detail": "Password reset token sent."}, status=status.HTTP_200_OK)
+        
+        # Assuming `serializer.save()` returns the token and user object
+        token, user = serializer.save()
+        
+        phone_number = user.phone_number
+        test_mode = request.data.get('test_mode', False)
+       
+        success, reset_or_message = send_password_reset_token(phone_number, test_mode=test_mode)
+        
+        if success:
+            # Return success response if SMS was sent
+            return Response({
+                'message': 'Password reset token sent. Please check your SMS.',
+                'user_id': user.id
+            }, status=status.HTTP_200_OK)
+        else:
+            # Return error response if SMS failed
+            return Response({'error': reset_or_message}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+      
     
     
 class PasswordResetConfirmView(generics.GenericAPIView):
@@ -107,10 +125,16 @@ class PasswordResetConfirmView(generics.GenericAPIView):
     serializer_class = PasswordResetConfirmSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({"detail": "Password has been reset."}, status=status.HTTP_200_OK)
+        phone_number = request.data.get('phone_number')
+        token = request.data.get('token')
+        test_mode = request.data.get('test_mode', False)  # Default to False if not provided
+
+        success, message = verify_password_reset_token(phone_number, token, test_mode)
+
+        if success:
+            return Response({"detail": message}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": message}, status=status.HTTP_400_BAD_REQUEST)
 
 
         
@@ -371,6 +395,7 @@ class ResendOtpView(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
 
         phone_number = user.phone_number  # Use phone number from user object
+        
 
         success, message = resend_otp(phone_number, test_mode=test_mode)
         if success:
