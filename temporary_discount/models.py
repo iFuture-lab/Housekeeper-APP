@@ -61,7 +61,7 @@ class CustomPackage(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     description = models.TextField()
-    #nationality = models.ForeignKey(Nationallity, on_delete=models.CASCADE, related_name='custom_packages')
+    # nationality = models.ForeignKey(Nationallity, on_delete=models.CASCADE, related_name='nationallities')
     request_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE, related_name='custom_packages')
     final_price = models.DecimalField(max_digits=10, decimal_places=2)
     start_date = models.DateTimeField(default=timezone.now)
