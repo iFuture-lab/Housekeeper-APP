@@ -29,9 +29,13 @@ class AdminPasswordResetSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         try:
-            self.user = User.objects.get(email=value)
+            # self.user = User.objects.get(email=value)
+            users = User.objects.filter(email=value)
+            if not users.exists():
+                raise serializers.ValidationError('User with this email does not exist.')
+            self.user = users.first()
         except User.DoesNotExist:
-            raise serializers.ValidationError(_('User with this email does not exist.'))
+            raise serializers.ValidationError('User with this email does not exist.')
         return value
 
     def save(self):
@@ -46,9 +50,14 @@ class AdminPasswordResetConfirmSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        self.user = User.objects.get(email=attrs['email'])
+        # self.user = User.objects.get(email=attrs['email'])
+        users = User.objects.filter(email=attrs['email'])
+        if users.exists():
+            self.user = users.first()
+        else:
+            raise serializers.ValidationError('User with this email does not exist.')
         if not default_token_generator.check_token(self.user, attrs['token']):
-            raise serializers.ValidationError(_('Invalid token or expired.'))
+            raise serializers.ValidationError('Invalid token or expired.')
         return attrs
 
     def save(self):
@@ -65,7 +74,7 @@ class PasswordResetSerializer(serializers.Serializer):
         try:
             self.user = CustomUser.objects.get(phone_number=value)
         except CustomUser.DoesNotExist:
-            raise serializers.ValidationError(_('User with this phone number does not exist.'))
+            raise serializers.ValidationError('User with this phone number does not exist.')
         return value
 
     def save(self):
@@ -81,7 +90,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     def validate(self, attrs):
         self.user = CustomUser.objects.get(phone_number=attrs['phone_number'])
         if not default_token_generator.check_token(self.user, attrs['token']):
-            raise serializers.ValidationError(_('Invalid token or expired.'))
+            raise serializers.ValidationError('Invalid token or expired.')
         return attrs
 
     def save(self):
@@ -134,8 +143,8 @@ class RegisterSerializercustomer(serializers.ModelSerializer):
             # nationalID=validated_data['nationalID'],
             dateOfBirth=validated_data['dateOfBirth'],
             password=validated_data['password'],
-            email=validated_data['email'],
-            
+            email=validated_data.get('email', None),
+            # email=validated_data['email'],
         )
         return user
     

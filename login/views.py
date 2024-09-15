@@ -2,7 +2,7 @@ from django.shortcuts import render,redirect
 import logging
 
 logger = logging.getLogger(__name__)
-#from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from .models import CustomUser
 # from .models import User 
 
@@ -555,7 +555,7 @@ class RegisterViewsystem(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
-    
+
     @swagger_auto_schema(
         request_body=RegisterSerializer,
         responses={
@@ -563,9 +563,10 @@ class RegisterViewsystem(generics.CreateAPIView):
             400: "Bad Request"
         }
     )
+    # def create(self, request, *args, **kwargs):
+    #     return super().create(request, *args, **kwargs)
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
-   
 
 
 class LoginViewsystem(generics.GenericAPIView):

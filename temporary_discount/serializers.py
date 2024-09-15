@@ -106,5 +106,6 @@ class CustomPackageSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         if nationallity_ids is not None:
-            instance.nationalities.set(nationallity_ids)
+            
+            instance.nationallities.set(nationallity_ids)
         return instance
