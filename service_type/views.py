@@ -15,19 +15,19 @@ from uuid import UUID
 class ServiceCreateView(MethodBasedPermissionsMixin,generics.ListCreateAPIView):
     queryset = ServiceType.objects.all()
     serializer_class = ServiceTypeSerializer
-    # permission_classes = [AllowAny] 
+    permission_classes = [AllowAny] 
 
 class ServiceDetailView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
     queryset = ServiceType.objects.all()
     serializer_class = ServiceTypeSerializer
-    # permission_classes = [AllowAny] 
+    permission_classes = [AllowAny] 
     
     
     
 ################# Get manay & delete manay ################################
 
 class ServiceBatchDetailView(MethodBasedPermissionsMixin,APIView):
-    # permission_classes = [AllowAny]
+    permission_classes = [AllowAny]
     serializer_class = ServiceTypeSerializer
      
     @swagger_auto_schema(

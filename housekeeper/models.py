@@ -233,6 +233,9 @@ class Housekeeper(models.Model):
         return self.Name
     
     
+def validate_saudi_national_id(national_id):
+    # Your logic to validate the Saudi national ID
+    pass
     
 class HousekeeperRequestType(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

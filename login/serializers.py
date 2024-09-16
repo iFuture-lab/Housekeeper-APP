@@ -70,8 +70,8 @@ class PasswordResetSerializer(serializers.Serializer):
 
     def save(self):
         token = default_token_generator.make_token(self.user)
-        # send this token via SMS to the user's phone number
-        return token
+        # Return both token and user
+        return token, self.user
     
 class PasswordResetConfirmSerializer(serializers.Serializer):
     phone_number = serializers.CharField()
@@ -81,7 +81,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     def validate(self, attrs):
         self.user = CustomUser.objects.get(phone_number=attrs['phone_number'])
         if not default_token_generator.check_token(self.user, attrs['token']):
-            raise serializers.ValidationError(_('Invalid token or expired.'))
+            raise serializers.ValidationError(('Invalid token or expired.'))
         return attrs
 
     def save(self):
