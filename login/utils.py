@@ -45,9 +45,13 @@ def send_otp(phone_number, force_resend=False,test_mode=False):
     
     try:
         if not test_mode:
+            body = f'Your OTP is {otp}'
             # Retrieve the OTP message template from the database
-            template = OtpMessage.objects.get(name='otp_message')
-            body = template.body.format(otp=otp)
+            # template = OtpMessage.objects.get(name='otp_message')
+            template = OtpMessage.objects.filter(name='otp_message')
+            if template.exists():
+                template = template.first()
+                body = template.body.format(otp=otp)
             sender = 'OFAQ'
             scheduled = None  # Optional: Set this if you want to schedule the message
             taqnyt = client(settings.TAQNYAT_API_KEY)

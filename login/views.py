@@ -260,37 +260,39 @@ class RegisterView(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+        # Create user but keep inactive
+
         try:
-            user = serializer.save(is_confirmed=False)  # Create user but keep inactive
-            phone_number = user.phone_number
+            phone_number = request.data.get('phone_number')  # Get the phone_number
             
             # Retrieve the existing role and assign it to the user
             default_role_name = "mobile user"  # Replace with the actual role name
-            role_instance = Role.objects.get(name=default_role_name)
-            
-            # Assign the user to the role within RolePerClient
-            role_per_client, created = RolePerClient.objects.get_or_create(
-                role=role_instance
-            )
-            role_per_client.clients.add(user)
+            role_instance = Role.objects.filter(name=default_role_name)
             
             # Send OTP and handle success or failure
             test_mode = request.data.get('test_mode', False)  # Default to False if not provided just for testing
             success, otp_or_message = send_otp(phone_number, test_mode=test_mode)
             
             if success:
+                user = serializer.save(is_confirmed=False)  # Create user but keep inactive
+                # Assign the user to the role within RolePerClient
+                if role_instance.exists():
+                    role_per_client, created = RolePerClient.objects.get_or_create(
+                        role=role_instance
+                    )
+                    role_per_client.clients.add(user)
                 return Response({
                     'message': 'User registered successfully. OTP sent. Please verify the OTP to activate your account.',
                     'user_id': user.id
                 }, status=status.HTTP_201_CREATED)
-            # else:
-            #     return Response({'error': otp_or_message}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error': otp_or_message}, status=status.HTTP_400_BAD_REQUEST)
         
-        except Role.DoesNotExist:
-            return Response({'error': 'Role not found.'}, status=status.HTTP_400_BAD_REQUEST)
+        # except Role.DoesNotExist:
+        #     return Response({'error': 'Role not found.'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             # Log the exception for debugging purposes
+            # user.delete()
             logger.error(f"An error occurred: {e}", exc_info=True)
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
