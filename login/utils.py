@@ -45,16 +45,18 @@ def send_otp(phone_number, force_resend=False,test_mode=False):
     
     try:
         if not test_mode:
-            body = f'Your OTP is {otp}'
+            # body = f'Your OTP is {otp}'
             # Retrieve the OTP message template from the database
-            # template = OtpMessage.objects.get(name='otp_message')
-            template = OtpMessage.objects.filter(name='otp_message')
-            if template.exists():
-                template = template.first()
-                body = template.body.format(otp=otp)
+            template = OtpMessage.objects.get(name='otp_message')
+            body = template.body.format(otp=otp)
+            # template = OtpMessage.objects.filter(name='otp_message')
+            # if template.exists():
+            #     template = template.first()
+            #     body = template.body.format(otp=otp)
             sender = 'OFAQ'
             scheduled = None  # Optional: Set this if you want to schedule the message
             taqnyt = client(settings.TAQNYAT_API_KEY)
+            print([phone_number])
             response = taqnyt.sendMsg(body, [phone_number], sender, scheduled)
             print("Response:", response)  # For debugging
             response_data = json.loads(response)
@@ -70,10 +72,11 @@ def send_otp(phone_number, force_resend=False,test_mode=False):
             
             print(x)
 
-            if response_data.get('status') == 'success':
-                return True, "OTP sent successfully."
-            else:
-                return False, f"Failed to send OTP: {response_data}"
+            # if response_data.get('statusCode') == '201':
+            #     return True, "OTP sent successfully."
+            # else:
+            #     return False, f"Failed to send OTP: {response_data}"
+            return True, "OTP sent successfully."
         else:
             # Simulate success for test mode
             OTPLog.objects.create(

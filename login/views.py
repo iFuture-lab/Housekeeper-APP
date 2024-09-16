@@ -278,7 +278,7 @@ class RegisterView(generics.CreateAPIView):
                 # Assign the user to the role within RolePerClient
                 if role_instance.exists():
                     role_per_client, created = RolePerClient.objects.get_or_create(
-                        role=role_instance
+                        role=role_instance[0]
                     )
                     role_per_client.clients.add(user)
                 return Response({
