@@ -40,7 +40,7 @@ class PackageByRequestTypeView(MethodBasedPermissionsMixin,generics.ListAPIView)
 class PackageRetrieveUpdateDestroyView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomPackage.objects.all()
     serializer_class = CustomPackageSerializer
-    # permission_classes = [AllowAny]
+    permission_classes = [AllowAny]
    
     
     
