@@ -36,6 +36,8 @@ class CustomPackageSerializer(serializers.ModelSerializer):
     #employment_type = EmploymentTypeSerializer()
     #request_type = ServiceTypeSerializer()
     nationalities_types= serializers.SerializerMethodField()
+    request_type_detail = ServiceTypeSerializer(source='request_type', read_only=True)
+    employment_type_detail = EmploymentTypeSerializer(source='employment_type', read_only=True)
     
     def get_nationalities_types(self, obj):
         return NationalitySerializer(obj.nationallities.all(), many=True).data
@@ -65,7 +67,7 @@ class CustomPackageSerializer(serializers.ModelSerializer):
         # Calculate the discounted price if applicable
         if obj.temporary_discount and obj.temporary_discount.is_active:
             now = timezone.now()
-            if obj.temporary_discount.start_date <= now <= obj.temporary_discount.end_date:
+            if obj.temporary_discount.start_date <= now and now <= obj.temporary_discount.end_date:
                 discount = Decimal(obj.temporary_discount.discount_percentage)  
                 final_price = Decimal(obj.final_price)  
                 discount_amount = (final_price * discount) / Decimal(100) 
@@ -85,11 +87,13 @@ class CustomPackageSerializer(serializers.ModelSerializer):
     
     
     def validate(self, data):
+        print(data)
         # Automatically set is_discount to True if temporary_discount is provided
         if data.get('temporary_discount') is not None:
             data['is_discount'] = True
         else:
             data['is_discount'] = False
+        # if data.get('final_price')  :
         return data
     
     def create(self, validated_data):

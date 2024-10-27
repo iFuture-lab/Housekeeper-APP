@@ -15,6 +15,7 @@ from datetime import date
 
 User = get_user_model()
 from .utils import send_otp, verify_otp
+import re
 
 
 # UserModel = get_user_model()
@@ -31,7 +32,7 @@ class AdminPasswordResetSerializer(serializers.Serializer):
         try:
             self.user = User.objects.get(email=value)
         except User.DoesNotExist:
-            raise serializers.ValidationError(_('User with this email does not exist.'))
+            raise serializers.ValidationError('User with this email does not exist.')
         return value
 
     def save(self):
@@ -48,7 +49,7 @@ class AdminPasswordResetConfirmSerializer(serializers.Serializer):
     def validate(self, attrs):
         self.user = User.objects.get(email=attrs['email'])
         if not default_token_generator.check_token(self.user, attrs['token']):
-            raise serializers.ValidationError(_('Invalid token or expired.'))
+            raise serializers.ValidationError('Invalid token or expired.')
         return attrs
 
     def save(self):
@@ -58,14 +59,35 @@ class AdminPasswordResetConfirmSerializer(serializers.Serializer):
 
 ###########################Clients##################################################
 
-class PasswordResetSerializer(serializers.Serializer):
+class ResetPasswordSerializer(serializers.Serializer):
     phone_number = serializers.CharField()
     new_password = serializers.CharField(write_only=True)
+
     def validate_phone_number(self, value):
         try:
             self.user = CustomUser.objects.get(phone_number=value)
         except CustomUser.DoesNotExist:
-            raise serializers.ValidationError(_('User with this phone number does not exist.'))
+            raise serializers.ValidationError('User with this phone number does not exist.')
+
+        if not re.search(r'^966', value):
+            raise serializers.ValidationError('Phone number must start with 966.')
+        if not re.search(r'^\d{12}$', value):
+            raise serializers.ValidationError('Phone number must have 12 digits.')
+        return value
+
+class PasswordResetSerializer(serializers.Serializer):
+    phone_number = serializers.CharField()
+    # new_password = serializers.CharField(write_only=True)
+    def validate_phone_number(self, value):
+        try:
+            self.user = CustomUser.objects.get(phone_number=value)
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError('User with this phone number does not exist.')
+
+        if not re.search(r'^966', value):
+            raise serializers.ValidationError('Phone number must start with 966.')
+        if not re.search(r'^\d{12}$', value):
+            raise serializers.ValidationError('Phone number must have 12 digits.')
         return value
 
     def save(self):
@@ -76,7 +98,7 @@ class PasswordResetSerializer(serializers.Serializer):
 class PasswordResetConfirmSerializer(serializers.Serializer):
     phone_number = serializers.CharField()
     token = serializers.CharField()
-    new_password = serializers.CharField(write_only=True)
+    # new_password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
         self.user = CustomUser.objects.get(phone_number=attrs['phone_number'])
@@ -201,24 +223,27 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
+        attrs.pop('password2')
         return attrs
 
-    def create(self, validated_data):
-        user = User.objects.create(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name']
-        )
-        user.set_password(validated_data['password'])
-        user.save()
-        return user
+    # def create(self, validated_data):
+    #     user = User.objects.create(
+    #         username=validated_data['username'],
+    #         email=validated_data['email'],
+    #         first_name=validated_data['first_name'],
+    #         last_name=validated_data['last_name']
+    #     )
+    #     user.set_password(validated_data['password'])
+    #     user.save()
+    #     print("ASDada")
+    #     # return user
+    #     return None
     
     
     
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation.pop('deleted_at', None)
+    # def to_representation(self, instance):
+    #     representation = super().to_representation(instance)
+    #     representation.pop('deleted_at', None)
     
 
 

@@ -10,7 +10,7 @@ from django.db.models import IntegerField,Max
 from django.utils import timezone
 from login.models import CustomUser
 from django.core.exceptions import ValidationError
-from housekeeper.models import HireRequest,TransferRequest,RecruitmentRequest,EmploymentType
+from housekeeper.models import HireRequest,TransferRequest,RecruitmentRequest,EmploymentType, Housekeeper
 from nationality.models import Nationallity
 from django.core.validators import FileExtensionValidator
 
@@ -51,6 +51,7 @@ class Contract(models.Model):
     hire_request = models.ForeignKey(HireRequest, on_delete=models.CASCADE, null=True, blank=True)
     transfer_request = models.ForeignKey(TransferRequest, on_delete=models.CASCADE, null=True, blank=True)
     recruitment_request= models.ForeignKey(RecruitmentRequest, on_delete=models.CASCADE, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     
     objects = SoftDeleteManager()  
     all_objects = models.Manager()
@@ -96,7 +97,7 @@ class UserInterest(models.Model):
         ('abandoned', 'Abandoned'),
     ]
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='interests')
-    service = models.ForeignKey(ServiceType, on_delete=models.CASCADE, related_name='user_interests')
+    service = models.ForeignKey(ServiceType, on_delete=models.CASCADE, related_name='user_interests', null=True, blank=True)
     timestamp = models.DateTimeField(default=timezone.now)
     status = models.CharField(max_length=20, choices=INTEREST_STATUS_CHOICES, blank=True, null=True)
     device_info = models.CharField(max_length=255, blank=True, null=True)
@@ -104,7 +105,9 @@ class UserInterest(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     nationality = models.ForeignKey(Nationallity, on_delete=models.SET_NULL, null=True, blank=True)
     employment_type = models.ForeignKey(EmploymentType, on_delete=models.SET_NULL, null=True, blank=True)
-    
+    created_at = models.DateTimeField(auto_now_add=True)
+    custom_package = models.ForeignKey(CustomPackage, on_delete=models.SET_NULL, null=True, blank=True)
+    housekeeper = models.ForeignKey(Housekeeper, on_delete=models.SET_NULL, null=True, blank=True)
     
     objects = SoftDeleteManager()  
     all_objects = models.Manager()  

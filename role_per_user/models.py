@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from role.models import Role
 import uuid
 from login.models import CustomUser
+from django.conf import settings
 
 from django.utils import timezone
 

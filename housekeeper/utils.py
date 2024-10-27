@@ -37,13 +37,13 @@ class ActionLoggingMixin:
         description = description or f"{action_type} for {model_name}"
 
         # Create the ActionLog entry
-        ActionLog.objects.create(
-            user=action_log_user,
-            custom_user=action_log_custom_user,
-            action_type=action_type,
-            description=description,
-            timestamp=now()
-        )
+        # ActionLog.objects.create(
+        #     user=action_log_user,
+        #     custom_user=action_log_custom_user,
+        #     action_type=action_type,
+        #     description=description,
+        #     timestamp=now()
+        # )
     # def log_action(self, user, action_type, model_name,custom_user, instance_id=None, description=None):
     #     if isinstance(user, AnonymousUser):
     #         # Optionally, handle anonymous users differently, e.g., log a specific message or skip logging
@@ -76,11 +76,12 @@ def send_message(phone_number, request_details, test_mode=False):
     
     body = f"""
     Your request has been created with the following details:
-    - Housekeeper: {request_details['housekeeper']}
+    - Housekeeper: {request_details['housekeeper_detail'].get('Name')}
     - Requester Contact: {request_details['requester_contact']}
     - Request Date: {request_details['request_date']}
-    - Status: {request_details['status']}
+    - Status: {request_details['status_detail'].get('Status')}
     """
+    print(request_details)
     
     sender = 'OFAQ'
     scheduled = None  # Optional: Set this if you want to schedule the message
@@ -92,13 +93,19 @@ def send_message(phone_number, request_details, test_mode=False):
         response = taqnyt.sendMsg(body, [phone_number], sender, scheduled)
         
         response_data = json.loads(response)
-        
-        if response_data.get('status') == 'success':
+        print(response_data['statusCode'])
+        if response_data.get('statusCode') == 200 or response_data.get('statusCode') == 201:
             return True, "Message sent successfully."
         else:
             error_message = response_data.get('message', 'Unknown error')
             print(f"Failed to send notification: {error_message}")  # Debug statement
             return False, f"Failed to send notification: {error_message}"
+        # if response_data.get('status') == 'success':
+        #     return True, "Message sent successfully."
+        # else:
+        #     error_message = response_data.get('message', 'Unknown error')
+        #     print(f"Failed to send notification: {error_message}")  # Debug statement
+        #     return False, f"Failed to send notification: {error_message}"
     except Exception as e:
         print(f"Error sending message: {e}")  # Debug statement
         return False, f"Error sending message: {e}"

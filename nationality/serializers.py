@@ -30,25 +30,68 @@ class NationalitySerializer(serializers.ModelSerializer):
     
     def validate_Nationality(self, value):
         # Convert the value to lowercase for case-insensitive checking
-        value_lower = value.lower()
-        # Check if a record with the same nationality (case-insensitive) already exists
-        if Nationallity.objects.filter(Nationality__iexact=value_lower).exists():
-            raise serializers.ValidationError("This nationality already exists.")
+        # value_lower = value.lower()
+        # # Check if a record with the same nationality (case-insensitive) already exists
+        # if Nationallity.objects.filter(Nationality__iexact=value_lower).exists():
+        #     raise serializers.ValidationError("This nationality already exists.")
         return value
     
+    def update(self, instance, validated_data):
+        image_data = self.context['request'].data.get('image')
+        print(type(image_data))
+        print(self.context['request'].data.keys().__contains__('image'))
+        if self.context['request'].data.keys().__contains__('image'):
+            if isinstance(image_data, str) and 'base64,' in image_data:
+                # Handle base64 string
+                format, imgstr = image_data.split(';base64,')
+                ext = format.split('/')[-1]
+                data = ContentFile(base64.b64decode(imgstr), name=f'{uuid.uuid4()}.{ext}')
+                validated_data['image'] = data
+            elif isinstance(image_data, str) and '/' in image_data:
+                image_data = image_data.replace('/media', '')
+                validated_data['image'] = image_data
+            elif isinstance(image_data, ContentFile) or isinstance(image_data, InMemoryUploadedFile):
+                validated_data['image'] = image_data
+            elif self.context['request'].data.get('image') is None:
+                validated_data['image'] = None
+            else:
+                raise serializers.ValidationError("Invalid image format.")
+            # else:
+            #     validated_data['image'] = None
+        # elif self.context['request'].data.keys().__contains__('image'):
+        #     validated_data['image'] = None
+
+        return super().update(instance, validated_data)
 
     def create(self, validated_data):
         image_data = self.context['request'].data.get('image')
+        print(type(image_data))
+        if self.context['request'].data.keys().__contains__('image'):
+            if isinstance(image_data, str) and 'base64,' in image_data:
+                # Handle base64 string
+                format, imgstr = image_data.split(';base64,')
+                ext = format.split('/')[-1]
+                data = ContentFile(base64.b64decode(imgstr), name=f'{uuid.uuid4()}.{ext}')
+                validated_data['image'] = data
+            elif isinstance(image_data, str) and '/' in image_data:
+                image_data = image_data.replace('/media', '')
+                validated_data['image'] = image_data
+            elif isinstance(image_data, ContentFile) or isinstance(image_data, InMemoryUploadedFile):
+                validated_data['image'] = image_data
+            elif self.context['request'].data.get('image') is None:
+                validated_data['image'] = None
+            else:
+                raise serializers.ValidationError("Invalid image format.")
         
-        if isinstance(image_data, str) and 'base64,' in image_data:
-            # Handle base64 string
-            format, imgstr = image_data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name=f'{uuid.uuid4()}.{ext}')
-            validated_data['image'] = data
-        elif isinstance(image_data, ContentFile) or isinstance(image_data, InMemoryUploadedFile):
-            # Handle standard file upload, no need to do anything
-            pass
+        # if isinstance(image_data, str) and 'base64,' in image_data:
+        #     # Handle base64 string
+        #     format, imgstr = image_data.split(';base64,')
+        #     ext = format.split('/')[-1]
+        #     data = ContentFile(base64.b64decode(imgstr), name=f'{uuid.uuid4()}.{ext}')
+        #     validated_data['image'] = data
+        # elif isinstance(image_data, ContentFile) or isinstance(image_data, InMemoryUploadedFile):
+        #     # Handle standard file upload, no need to do anything
+        #     pass
 
         return super().create(validated_data)
 

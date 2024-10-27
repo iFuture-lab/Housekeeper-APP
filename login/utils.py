@@ -37,11 +37,13 @@ def send_otp(phone_number, force_resend=False,test_mode=False):
     last_sent = OTPLog.objects.filter(phone_number=phone_number).order_by('-created_at').first()
     current_time = timezone.now()
     
-    if last_sent and (current_time - last_sent.created_at < timezone.timedelta(seconds=60)) and not force_resend:
+    if last_sent and (current_time - last_sent.created_at < timezone.timedelta(seconds=300)) and not force_resend:
         return False, "Please wait before requesting a new OTP."
 
     #otp = generate_otp()
+    otp_key = f'otp_{phone_number}'
     otp = '0000' if test_mode else generate_otp()
+    cache.set(otp_key, otp, timeout=300)
     
     try:
         if not test_mode:
@@ -116,10 +118,8 @@ def send_otp(phone_number, force_resend=False,test_mode=False):
         
        
 def verify_otp(phone_number, entered_otp, test_mode=False):
-    
     otp_key = f'otp_{phone_number}'
     cached_otp = cache.get(otp_key)
-    
     # Handle OTP verification based on the mode
     if test_mode:
         if entered_otp == '0000':  # Default OTP for testing
@@ -141,19 +141,19 @@ def verify_otp(phone_number, entered_otp, test_mode=False):
         otp_record = OTPLog.objects.filter(
             phone_number=phone_number,
             otp=entered_otp,
-            is_used=False
+            # is_used=False
         ).order_by('-created_at').first()
         
         if otp_record:
             # Check if the OTP is within the valid time window (e.g., 1 minutes)
-            expiration_time = timezone.now() - timezone.timedelta(minutes=1)
+            expiration_time = timezone.now() - timezone.timedelta(seconds=300)
             if otp_record.created_at > expiration_time:
                 # Mark OTP as used
-                otp_record.is_used = True
-                otp_record.save()
+                # otp_record.is_used = True
+                # otp_record.save()
                 
-                # Optionally, you can cache the valid OTP for future quick checks
-                cache.set(otp_key, entered_otp, timeout=300)  # Cache for 5 minutes
+                # # Optionally, you can cache the valid OTP for future quick checks
+                # cache.set(otp_key, entered_otp, timeout=300)  # Cache for 5 minutes
                 return True
         
         return False
@@ -191,11 +191,8 @@ def generate_password_reset_token(length=6):
     characters = string.digits  # Typically, a token contains digits
     return ''.join(random.choice(characters) for _ in range(length))
 
-
-
-
 def send_password_reset_token(phone_number, force_resend=False, test_mode=False):
-   
+
     token = '123456' if test_mode else generate_password_reset_token()
 
     try:
@@ -217,10 +214,11 @@ def send_password_reset_token(phone_number, force_resend=False, test_mode=False)
                 created_at=timezone.now()
             )
 
-            if response_data.get('status') == 'success':
-                return True, "Password reset token sent successfully."
-            else:
-                return False, f"Failed to send password reset token: {response_data}"
+            return True, "Password reset token sent successfully."
+            # if response_data.get('status') == 'success':
+                # return True, "Password reset token sent successfully."
+            # else:
+                # return False, f"Failed to send password reset token: {response_data}"
         else:
             # Simulate success for test mode and log the OTP
             OTPLog.objects.create(

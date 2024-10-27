@@ -103,8 +103,10 @@ class CustomUser(AbstractBaseUser):
     fullName = models.CharField(max_length=150)
     password = models.CharField(max_length=128)  # ensure to hash password properly
     # password2 = models.CharField(max_length=128)  
-    phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
-    phone_number = models.CharField(validators=[phone_regex], max_length=17, blank=True,unique=True) 
+    phone_regex_length = RegexValidator(regex=r'^\d{12}$', message="contact number must have 12 digits.")
+    phone_regex_start = RegexValidator(regex=r'^966', message="contact number must start with 966.")
+    # phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    phone_number = models.CharField(validators=[phone_regex_start, phone_regex_length], max_length=17, blank=True,unique=True) 
     email=models.CharField(max_length=100,null=True, validators=[EmailValidator(message="Enter a valid email address.")],blank=True)
     dateOfBirth = models.DateField(default=timezone.now) 
     # nationalID=  models.CharField(max_length=100,validators=[validate_saudi_national_id])
@@ -113,8 +115,8 @@ class CustomUser(AbstractBaseUser):
     is_confirmed= models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
      
-    USERNAME_FIELD = 'fullName'
-    REQUIRED_FIELDS = ['phone_number']
+    USERNAME_FIELD = 'phone_number'
+    REQUIRED_FIELDS = ['fullName']
 
     objects = CustomUserManager()
     
@@ -135,7 +137,7 @@ class CustomUser(AbstractBaseUser):
         super().delete()
 
     def __str__(self):
-        return self.fullName
+        return f"{self.fullName} - {self.phone_number}"
     
     
     # def clean(self):

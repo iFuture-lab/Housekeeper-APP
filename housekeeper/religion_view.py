@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .permissions import MethodBasedPermissionsMixin
+from uuid import UUID
 
 
 #################serilizer#########################################
@@ -21,7 +22,7 @@ class ReligionSerializer(serializers.ModelSerializer):
 class ReligionCreateView(MethodBasedPermissionsMixin,generics.ListCreateAPIView):
     queryset = Religion.objects.all()
     serializer_class = ReligionSerializer
-    # permission_classes = [AllowAny] 
+    permission_classes = [AllowAny] 
 
 class ReligionDetailView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
     queryset = Religion.objects.all()
@@ -53,12 +54,16 @@ class ReligionBatchDetailView(MethodBasedPermissionsMixin,APIView):
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
         except ValueError:
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Query the Housekeeper objects with the given IDs
-        religion= Religion.objects.filter(id__in=ids)
+        religion= Religion.objects.filter(id__in=uuid_list)
 
         # Serialize the data
         serializer = ReligionSerializer(religion, many=True)
@@ -83,11 +88,14 @@ class ReligionBatchDetailView(MethodBasedPermissionsMixin,APIView):
         # Extract the 'ids' parameter from the query parameters
         ids = request.query_params.get('ids', '')
 
-        # Split the 'ids' parameter by commas and convert to integers
         try:
-            ids = list(map(int, ids.split(',')))
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
         except ValueError:
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Delete the Housekeeper objects with the given IDs
         count, _ =Religion.objects.filter(id__in=ids).delete()
