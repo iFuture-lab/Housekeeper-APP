@@ -17,7 +17,6 @@ class RolePermission(BasePermission):
         required_permissions = getattr(view, 'required_permissions', None)
 
         if not required_permissions:
-            print("hiiiiiiiiiiiiiiii")
             return True 
 
         method_permissions = {
@@ -35,10 +34,8 @@ class RolePermission(BasePermission):
 
         try:
             if isinstance(request.user, User):
-                print("i found the user")
                 return self.user_has_permission(request.user, operation)
             elif isinstance(request.user, CustomUser):
-                print("i found the client")
                 return self.client_has_permission(request.user, operation)
             
             else:
@@ -83,7 +80,6 @@ class RolePermission(BasePermission):
             role = role_per_client.role
             print(f"Checking role: {role}")
             if role.permissions.filter(name=permission_name).exists():
-                print("i gottttttttttttt the permission")
                 print(f"Permission '{permission_name}' found for role.")
                 return True
                
@@ -91,25 +87,73 @@ class RolePermission(BasePermission):
         return False
     
 
+class CustomPermission(BasePermission):
+
+    def has_permission(self, request, view):
+        if request.user.is_superuser:
+            return True
+        if isinstance(request.user, User):
+            serializer = view.serializer_class
+            model_name = None
+            app_name = None
+            if serializer:
+                model_name = serializer.Meta.model.__name__
+                app_name = serializer.Meta.model._meta.app_label
+
+            if model_name and app_name:
+                perm = None
+                
+                if request.method == 'GET':
+                    perm = f"{app_name}.view_{model_name}"
+                elif request.method == 'POST':
+                    perm = f"{app_name}.create_{model_name}"
+                elif request.method == 'PUT':
+                    perm = f"{app_name}.update_{model_name}"
+                elif request.method == 'PATCH':
+                    perm = f"{app_name}.update_{model_name}"
+                elif request.method == 'DELETE':
+                    perm = f"{app_name}.delete_{model_name}"
+                perm = perm.lower()
+                if perm:
+                    return request.user.has_perm(perm)
+                else:
+                    return False
+        return False
 
 class MethodBasedPermissionsMixin:
     
-    permission_classes = [RolePermission]  
+    # permission_classes = [RolePermission]
+    permission_classes = [CustomPermission]
 
-    def get_permissions(self):
+    
+
+    # def get_permissions(self):
+    #     # print(self.required_permissions)
+    #     serializer = self.get_serializer()
+    #     model_name = None
+    #     app_name = None
+    #     if serializer:
+    #         model_name = serializer.Meta.model.__name__
+    #         app_name = serializer.Meta.model._meta.app_label
+
+    #     if model_name and app_name:
+    #         # self.permission_required  = ['%s.%s' % (app_name, model_name)]
+    #         if self.request.method == 'GET':
+    #             self.permission_required = f"{app_name}.view_{model_name}"
+    #     print(self.permission_classes)
       
-        if self.request.method == 'GET':
-            self.required_permissions = ['read']
-        elif self.request.method == 'POST':
-            self.required_permissions = ['create']
-        elif self.request.method in ['PUT', 'PATCH']:
-            self.required_permissions = ['update']
-        elif self.request.method == 'DELETE':
-            self.required_permissions = ['delete']
-        else:
-            self.required_permissions = []
+        # if self.request.method == 'GET':
+        #     self.required_permissions = ['read']
+        # elif self.request.method == 'POST':
+        #     self.required_permissions = ['create']
+        # elif self.request.method in ['PUT', 'PATCH']:
+        #     self.required_permissions = ['update']
+        # elif self.request.method == 'DELETE':
+        #     self.required_permissions = ['delete']
+        # else:
+        #     self.required_permissions = []
 
-        return super().get_permissions()
+        # return super().get_permissions()
     
     
     

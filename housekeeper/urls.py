@@ -7,20 +7,18 @@ from .views import (
     HireRequestListCreateView, HireRequestDetailView,
     RecruitmentRequestListCreateView, RecruitmentRequestDetailView,
     TransferRequestListCreateView, TransferRequestDetailView
-   
 )
-from .views import HousekeeperIDsView,AvailableHousekeeper,TransferBatchStatusUpdateView,RecruitmentBatchStatusUpdateView,HireRequestListView,TransferRequestListView,HousekeeperListView,HousekeeperFilterView
+from .views import NotificationDetailView, HousekeeperIDsView,AvailableHousekeeper,TransferBatchStatusUpdateView,RecruitmentBatchStatusUpdateView,HireRequestListView,TransferRequestListView,HousekeeperListView,HousekeeperFilterView
 from.views import HousekeeperBatchDetailView,HireHousekeeperBatchDetailView,RecruitmentRequestBatchDetailView,TransferRequestBatchDetailView,HousekeeperBatchStatusUpdateView,RecruitmentListView,CombinedRequestsByRequester
 from .status_view import StatusCreateView,StatusDetailView,StatusBatchDetailView
-from.views import TaxesCreateView,TaxesDetailView
+from.views import PushNotificationTokenViewset, NotificationListCreateView, TaxesCreateView,TaxesDetailView, TaxesBatchDetailView
 from .religion_view import ReligionCreateView, ReligionBatchDetailView,ReligionDetailView
 from .employment_type_view import EmploymentTypeCreateView, EmploymentTypeBatchDetailView,EmploymentTypeDetailView
-# from .views import ActionLogViewSet
+# from fcm_django.api.rest_framework import FCMDeviceAuthorizedViewSet
 
+router = DefaultRouter() 
 
-
-# router = DefaultRouter()
-# router.register(r'action-logs', ActionLogViewSet)
+# router.register('notiffications-tokens', PushNotificationTokenViewset, basename='devices')
 
 urlpatterns = [
     path('housekeepers/', HousekeeperListCreateView.as_view(), name='housekeeper-list-create'),
@@ -73,14 +71,12 @@ urlpatterns = [
     
     path('taxes/', TaxesCreateView.as_view(), name='taxes-create'),
     path('taxes/<uuid:pk>/', TaxesDetailView.as_view(), name='taxes-detail'),
+    path('taxes/batch/', TaxesBatchDetailView.as_view(), name='taxes-batch'),
     
-    
-    
-    
-    
-    
-    
-    
-    
-   
+
+    path('notifications/', NotificationListCreateView.as_view(), name='notifications-list-create'),
+    path('notifications/<uuid:pk>/', NotificationDetailView.as_view(), name='notifications-detail'),
+    path('notifications-tokens/', PushNotificationTokenViewset.as_view({'get': 'list', 'post': 'create'}), name='notifications-tokens'),
+    path('notifications-tokens/<uuid:pk>/', PushNotificationTokenViewset.as_view({'get': 'retrieve'}), name='notifications-tokens'),
+    # path('', include(router.urls)),
 ]

@@ -14,11 +14,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
-
-
 import os
-
-
+from firebase_admin import initialize_app
 
 
 #####################SMS API########################################
@@ -29,7 +26,7 @@ TAQNYAT_SENDER= 'OFAQ'
 
 
 
-# AUTH_USER_MODEL = 'login.AdminUser'
+# AUTH_USER_MODEL = 'login.CustomUser'
 
 # SECURE_SSL_REDIRECT = True
 # SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -92,7 +89,7 @@ SECRET_KEY = 'django-insecure-^n5#@fw9(nn-!$(%a#eq)!fv#s_q)nt_f%zs2vaf^*c7yu!_m9
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['194.5.157.162','localhost','153.92.1.138','ofaq.ifuture.sa']
+ALLOWED_HOSTS = ['194.5.157.162','localhost','153.92.1.138','ofaq.ifuture.sa','127.0.0.1']
 
 
 
@@ -129,6 +126,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'corsheaders',
     'channels',
+    'fcm_django',
 ]
 
 
@@ -146,7 +144,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     
-    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    # 'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
@@ -156,9 +154,9 @@ REST_FRAMEWORK = {
     #     'anon': '1000000000000000000000000000/day',
     #     'user': '1000/day'
     # },
-    
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10,
+    'DEFAULT_PAGINATION_CLASS': 'housekeeper.pagination.CustomPagination',
+    'ORDERING_PARAM': 'sort',
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend', 'housekeeper.ordering.CustomOrdering'],
 }
 
 ACCOUNT_EMAIL_VERIFICATION = 'none'
@@ -347,4 +345,16 @@ SWAGGER_SETTINGS = {
             'in': 'header',
         }
     }
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
+
+FIREBASE_APP = initialize_app()
+
+FCM_DJANG_SETTINGS = {
+    "ONE_DEVICE_PER_USER": False,
 }

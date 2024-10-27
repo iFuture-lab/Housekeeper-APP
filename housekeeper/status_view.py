@@ -15,12 +15,23 @@ from uuid import UUID
 class StatusCreateView(MethodBasedPermissionsMixin,generics.ListCreateAPIView):
     queryset = Status.objects.all()
     serializer_class = StatusSerializer
-    # permission_classes = [AllowAny] 
+    permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        statuses = Status.objects.values_list('Status', flat=True)
+        statuses = list(filter(lambda x: x.lower(), statuses))
+        if request.data.get("Status").lower() in statuses:
+            return Response({"Status": "This status already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 class StatusDetailView(MethodBasedPermissionsMixin,generics.RetrieveUpdateDestroyAPIView):
     queryset = Status.objects.all()
     serializer_class = StatusSerializer
-    # permission_classes = [AllowAny] 
+    permission_classes = [AllowAny] 
     
     
     
@@ -48,9 +59,14 @@ class StatusBatchDetailView(MethodBasedPermissionsMixin,APIView):
  
         try:
             # ids = list(map(int, ids.split(',')))
-            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
+            # uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
        
         state = Status.objects.filter(id__in=uuid_list)
@@ -80,10 +96,14 @@ class StatusBatchDetailView(MethodBasedPermissionsMixin,APIView):
        
         try:
             # ids = list(map(int, ids.split(',')))
-            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
             
         except ValueError:
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         
         count, _ =Status.objects.filter(id__in=uuid_list).delete()

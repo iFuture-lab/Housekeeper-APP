@@ -8,6 +8,8 @@ import json
 import time
 from django.utils import timezone
 import logging
+import random
+import string
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -35,20 +37,28 @@ def send_otp(phone_number, force_resend=False,test_mode=False):
     last_sent = OTPLog.objects.filter(phone_number=phone_number).order_by('-created_at').first()
     current_time = timezone.now()
     
-    if last_sent and (current_time - last_sent.created_at < timezone.timedelta(seconds=60)) and not force_resend:
+    if last_sent and (current_time - last_sent.created_at < timezone.timedelta(seconds=300)) and not force_resend:
         return False, "Please wait before requesting a new OTP."
 
     #otp = generate_otp()
+    otp_key = f'otp_{phone_number}'
     otp = '0000' if test_mode else generate_otp()
+    cache.set(otp_key, otp, timeout=300)
     
     try:
         if not test_mode:
+            # body = f'Your OTP is {otp}'
             # Retrieve the OTP message template from the database
             template = OtpMessage.objects.get(name='otp_message')
             body = template.body.format(otp=otp)
+            # template = OtpMessage.objects.filter(name='otp_message')
+            # if template.exists():
+            #     template = template.first()
+            #     body = template.body.format(otp=otp)
             sender = 'OFAQ'
             scheduled = None  # Optional: Set this if you want to schedule the message
             taqnyt = client(settings.TAQNYAT_API_KEY)
+            print([phone_number])
             response = taqnyt.sendMsg(body, [phone_number], sender, scheduled)
             print("Response:", response)  # For debugging
             response_data = json.loads(response)
@@ -64,10 +74,11 @@ def send_otp(phone_number, force_resend=False,test_mode=False):
             
             print(x)
 
-            if response_data.get('status') == 'success':
-                return True, "OTP sent successfully."
-            else:
-                return False, f"Failed to send OTP: {response_data}"
+            # if response_data.get('statusCode') == '201':
+            #     return True, "OTP sent successfully."
+            # else:
+            #     return False, f"Failed to send OTP: {response_data}"
+            return True, "OTP sent successfully."
         else:
             # Simulate success for test mode
             OTPLog.objects.create(
@@ -107,10 +118,8 @@ def send_otp(phone_number, force_resend=False,test_mode=False):
         
        
 def verify_otp(phone_number, entered_otp, test_mode=False):
-    
     otp_key = f'otp_{phone_number}'
     cached_otp = cache.get(otp_key)
-    
     # Handle OTP verification based on the mode
     if test_mode:
         if entered_otp == '0000':  # Default OTP for testing
@@ -132,19 +141,19 @@ def verify_otp(phone_number, entered_otp, test_mode=False):
         otp_record = OTPLog.objects.filter(
             phone_number=phone_number,
             otp=entered_otp,
-            is_used=False
+            # is_used=False
         ).order_by('-created_at').first()
         
         if otp_record:
             # Check if the OTP is within the valid time window (e.g., 1 minutes)
-            expiration_time = timezone.now() - timezone.timedelta(minutes=1)
+            expiration_time = timezone.now() - timezone.timedelta(seconds=300)
             if otp_record.created_at > expiration_time:
                 # Mark OTP as used
-                otp_record.is_used = True
-                otp_record.save()
+                # otp_record.is_used = True
+                # otp_record.save()
                 
-                # Optionally, you can cache the valid OTP for future quick checks
-                cache.set(otp_key, entered_otp, timeout=300)  # Cache for 5 minutes
+                # # Optionally, you can cache the valid OTP for future quick checks
+                # cache.set(otp_key, entered_otp, timeout=300)  # Cache for 5 minutes
                 return True
         
         return False
@@ -174,3 +183,78 @@ def verify_otp(phone_number, entered_otp, test_mode=False):
 
 def resend_otp(phone_number,test_mode=False):
     return send_otp(phone_number, force_resend=True,test_mode=test_mode)
+
+
+
+def generate_password_reset_token(length=6):
+    """Generate a secure random password reset token."""
+    characters = string.digits  # Typically, a token contains digits
+    return ''.join(random.choice(characters) for _ in range(length))
+
+def send_password_reset_token(phone_number, force_resend=False, test_mode=False):
+
+    token = '123456' if test_mode else generate_password_reset_token()
+
+    try:
+        if not test_mode:
+            # Retrieve the password reset message template from the database
+            template = OtpMessage.objects.get(name='password_reset_message')
+            body = template.body.format(otp=token)
+            sender = 'OFAQ'
+            scheduled = None  # Optional: Set this if you want to schedule the message
+            taqnyt = client(settings.TAQNYAT_API_KEY)
+            response = taqnyt.sendMsg(body, [phone_number], sender, scheduled)
+            print("Response:", response)  # For debugging
+            response_data = json.loads(response)
+            
+            OTPLog.objects.create(
+                phone_number=phone_number,
+                otp=token,
+                response_body=response,
+                created_at=timezone.now()
+            )
+
+            return True, "Password reset token sent successfully."
+            # if response_data.get('status') == 'success':
+                # return True, "Password reset token sent successfully."
+            # else:
+                # return False, f"Failed to send password reset token: {response_data}"
+        else:
+            # Simulate success for test mode and log the OTP
+            OTPLog.objects.create(
+                phone_number=phone_number,
+                otp=token,
+                created_at=timezone.now()
+            )
+            return True, "Test password reset token sent successfully."
+    except OtpMessage.DoesNotExist:
+        return False, "Password reset message template not found."
+    
+    
+    
+def verify_password_reset_token(phone_number, entered_token,test_mode=False):
+   
+    if test_mode:
+        # Check if the entered token matches the test token '123456'
+        if entered_token == '123456':
+            return True,"token verifed"
+        else:
+            return False, "Test mode: Invalid token."
+
+    # Proceed with the normal token verification logic if not in test mode
+    try:
+        latest_log = OTPLog.objects.filter(phone_number=phone_number).order_by('-created_at').first()
+        if not latest_log:
+            return False, "No OTP found for this phone number."
+
+        if latest_log.otp == entered_token:
+            time_diff = timezone.now() - latest_log.created_at
+            if time_diff.total_seconds() > 600:  # Token valid for 10 minutes (600 seconds)
+                return False, "Token expired."
+            return True, "Token verified successfully."
+        else:
+            return False, "Invalid token."
+    except OTPLog.DoesNotExist:
+        return False, "No OTP found for this phone number."
+            
+

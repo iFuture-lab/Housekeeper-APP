@@ -32,10 +32,11 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.conf import settings
-from .serializers import PasswordResetSerializer,PasswordResetConfirmSerializer,AdminPasswordResetSerializer, AdminPasswordResetConfirmSerializer
+from .serializers import  ResetPasswordSerializer, PasswordResetSerializer,PasswordResetConfirmSerializer,AdminPasswordResetSerializer, AdminPasswordResetConfirmSerializer
 from django.core.mail import send_mail
 from rest_framework.views import APIView
-
+from uuid import UUID
+from housekeeper.serializer import CustomUserSerializer
 
 from django.contrib.auth import views as auth_views
 from rest_framework.permissions import AllowAny
@@ -49,12 +50,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from .models import BlacklistedToken
-from .utils import send_otp, verify_otp,resend_otp
+from .utils import send_otp, verify_otp,resend_otp,send_password_reset_token,verify_password_reset_token
 
 from django.core.cache import cache
 from .authentication import CustomJWTAuthentication,CustomUserAuthentication
 from role_per_user.models import RolePerClient,RolePerUser
 from role.models import Role
+from django.db import transaction
 
 User = get_user_model()
 
@@ -97,9 +99,27 @@ class PasswordResetView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        token = serializer.save()
-        # Here you should send the token to the user's phone number via SMS
-        return Response({"detail": "Password reset token sent."}, status=status.HTTP_200_OK)
+        
+        # Assuming `serializer.save()` returns the token and user object
+        token, user = serializer.save()
+        
+        phone_number = user.phone_number
+        test_mode = request.data.get('test_mode', False)
+
+        success, reset_or_message = send_password_reset_token(phone_number, test_mode=test_mode)
+        
+        if success:
+            # Return success response if SMS was sent
+            return Response({
+                'message': 'Password reset token sent. Please check your SMS.',
+                'user_id': user.id
+            }, status=status.HTTP_200_OK)
+        else:
+            # Return error response if SMS failed
+            return Response({'error': reset_or_message}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+      
     
     
 class PasswordResetConfirmView(generics.GenericAPIView):
@@ -107,12 +127,49 @@ class PasswordResetConfirmView(generics.GenericAPIView):
     serializer_class = PasswordResetConfirmSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        phone_number = request.data.get('phone_number')
+        token = request.data.get('token')
+        # new_password = request.data.get('new_password')
+        test_mode = request.data.get('test_mode', False)  # Default to False if not provided
+
+        if not token:
+            return Response({"error": "Token is required."})
+        
+        if not phone_number:
+            return Response({"error": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # if not new_password:
+        #     return Response({"error": "New password is required."}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+        success, message = verify_password_reset_token(phone_number, token, test_mode)
+
+        if success:
+            # user = CustomUser.objects.get(phone_number=phone_number)
+            # user.set_password(new_password)
+            # user.save()
+            request.session[f'{phone_number}_reset_password'] = True
+            return Response({"detail": message}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": message}, status=status.HTTP_400_BAD_REQUEST)
+
+class ResetPasswordView(generics.GenericAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = ResetPasswordSerializer
+    def post(self, request, *args, **kwargs):
+        serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({"detail": "Password has been reset."}, status=status.HTTP_200_OK)
-
-
+        user = CustomUser.objects.filter(phone_number=serializer.validated_data['phone_number'])
+        # if not request.session.get(f'{serializer.validated_data["phone_number"]}_reset_password'):
+        #     return Response({"error": "Token has not been verified."}, status=status.HTTP_400_BAD_REQUEST)
+        if user.exists():
+            user = user.first()
+            user.set_password(serializer.validated_data['new_password'])
+            user.save()
+            request.session[f'{serializer.validated_data["phone_number"]}_reset_password'] = False
+            return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
         
         
 ########################### clients views for testing with javascripts #########################################
@@ -232,30 +289,71 @@ class RegisterView(generics.CreateAPIView):
     #             'message': 'can not send otp'
     #         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    
+    # @transaction.atomic
     def post(self, request, *args, **kwargs):
+        # serializer = self.get_serializer(data=request.data)
+        # serializer.is_valid(raise_exception=True)
+        # print("asasasdasd")
+        # Create user but keep inactive
+        phone_number = request.data.get('phone_number')
+        unconfirmed_user = CustomUser.objects.filter(phone_number=phone_number, is_confirmed=False)
+        # print(unconfirmed_user.first().is_confirmed)
+        if unconfirmed_user.exists():
+            unconfirmed_user.delete()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         try:
-            user = serializer.save(is_confirmed=False)  # Create user but keep inactive
-            phone_number = user.phone_number
-            
+            # phone_number = request.data.get('phone_number')  # Get the phone_number
+            fullName = request.data.get('fullName')
+            email = request.data.get('email')
+            password = request.data.get('password')
+
+
+            if not phone_number:
+                return Response({
+                    'message': 'Phone number is required.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            if not password:
+                return Response({
+                    'message': 'Password is required.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            if not fullName:
+                return Response({
+                    'message': 'Full name is required.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            # if not email:
+            #     return Response({
+            #         'message': 'Email is required.'
+            #     }, status=status.HTTP_400_BAD_REQUEST)
+            # if CustomUser.objects.filter(phone_number=phone_number).exists():
+            #     return Response({
+            #         'message': 'User with this phone number already exists.'
+            #     }, status=status.HTTP_400_BAD_REQUEST)
+            # user = CustomUser.objects.create_user(phone_number=phone_number, password=password, fullName=fullName, email=email, is_confirmed=False)
             # Retrieve the existing role and assign it to the user
             default_role_name = "mobile user"  # Replace with the actual role name
-            role_instance = Role.objects.get(name=default_role_name)
+            role_instance = Role.objects.filter(name=default_role_name)
             
-            # Assign the user to the role within RolePerClient
-            role_per_client, created = RolePerClient.objects.get_or_create(
-                role=role_instance
-            )
-            role_per_client.clients.add(user)
-            
+
             # Send OTP and handle success or failure
             test_mode = request.data.get('test_mode', False)  # Default to False if not provided just for testing
             success, otp_or_message = send_otp(phone_number, test_mode=test_mode)
-            
+            user = serializer.save(is_confirmed=False)
             if success:
+                
+                # serializer = self.get_serializer(data=request.data)
+                # serializer.is_valid(raise_exception=True)
+                # unconfirmed_user = CustomUser.objects.filter(phone_number=phone_number, is_confirmed=False)
+                # if unconfirmed_user.exists():
+                #     user.delete()
+                # user = serializer.save(is_confirmed=False)  # Create user but keep inactive
+                # Assign the user to the role within RolePerClient
+                if role_instance.exists():
+                    role_per_client, created = RolePerClient.objects.get_or_create(
+                        role=role_instance[0]
+                    )
+                    role_per_client.clients.add(user)
                 return Response({
                     'message': 'User registered successfully. OTP sent. Please verify the OTP to activate your account.',
                     'user_id': user.id
@@ -263,10 +361,11 @@ class RegisterView(generics.CreateAPIView):
             else:
                 return Response({'error': otp_or_message}, status=status.HTTP_400_BAD_REQUEST)
         
-        except Role.DoesNotExist:
-            return Response({'error': 'Role not found.'}, status=status.HTTP_400_BAD_REQUEST)
+        # except Role.DoesNotExist:
+        #     return Response({'error': 'Role not found.'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             # Log the exception for debugging purposes
+            # user.delete()
             logger.error(f"An error occurred: {e}", exc_info=True)
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -371,6 +470,7 @@ class ResendOtpView(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
 
         phone_number = user.phone_number  # Use phone number from user object
+        
 
         success, message = resend_otp(phone_number, test_mode=test_mode)
         if success:
@@ -654,11 +754,46 @@ class LogoutViewsystem(APIView):
         except Exception as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
-             
+class DeleteUserView(APIView):
+    permission_classes = (IsAuthenticated,)
+    def delete(self, request, *args, **kwargs):
+        CustomUser.objects.filter(id=request.user.id).delete()
+        return Response({'detail': 'User deleted successfully'}, status=status.HTTP_200_OK)
 
+class CustomersListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = CustomUserSerializer
+    queryset = CustomUser.objects.all()
+
+
+class CustomerBatchView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = CustomUserSerializer
+    queryset = CustomUser.objects.all()
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'ids',
+                openapi.IN_QUERY,
+                description="Comma-separated list of IDs",
+                type=openapi.TYPE_STRING
+            )
+        ]
+    )
     
+    def get(self, request, *args, **kwargs):
+        ids = request.query_params.get('ids', '')
+        try:
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
+        except ValueError:
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
-  
-     
+        customers = CustomUser.objects.filter(id__in=uuid_list)
+
+        serializer = CustomUserSerializer(customers, many=True)
         
-    
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, viewsets
 
 # Create your views here.
 from rest_framework import generics
@@ -9,10 +10,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
-from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferRequest,HousekeeperRequestType
+from .models import PushNotificationToken, Notification, Housekeeper, HireRequest, RecruitmentRequest, TransferRequest,HousekeeperRequestType
 from .serializer import HousekeeperSerializer, HireRequestSerializer, RecruitmentRequestSerializer, TransferRequestSerializer,TaxesSerializer
 from .serializer import DummyHousekeeperSerializer,HousekeeperIDSerializer,DummyHireHousekeeperSerializer,DummyRecruitmentRequestSerializer,DummyTransferRequestSerializer,DeleteHousekeeper,UpdateHireRequest
-from.models import Status,Taxes
+from.models import Status,Taxes, PushNotificationToken
 from .filter import HousekeeperFilter
 from django.db import transaction
 from .filter import StatusFilter
@@ -25,15 +26,16 @@ from temporary_discount.models import CustomPackage
 from django.conf import settings
 from django.http import HttpResponse
 import os
-from .serializer import CombinedRequestsSerializer
+from .serializer import CombinedRequestsSerializer, NotificationSerializer, PushNotificationTokenSerializer
 from .permissions import RolePermission,MethodBasedPermissionsMixin
-    
-    
-    
-    
-    
-    
-    
+from login.models import CustomUser
+from django.http import QueryDict
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from django.contrib.auth.models import User
+from fcm_django.models import FCMDevice
+from fcm_django.api.rest_framework import FCMDeviceAuthorizedViewSet
+from .notifications import send_push_notification
   
 
 
@@ -42,6 +44,7 @@ from .permissions import RolePermission,MethodBasedPermissionsMixin
 class CombinedRequestsByRequester(MethodBasedPermissionsMixin,APIView):
     serializer_class= CombinedRequestsSerializer
     # permission_classes = [RolePermission]
+    permission_classes = [AllowAny]
     
     # def get_permissions(self):
     #     if self.request.method == 'GET':
@@ -393,7 +396,11 @@ class HousekeeperBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMixin,
 
         try:
             # ids = list(map(int, ids.split(',')))
-            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
         except ValueError:
             self.log_action(
                 user=request.user,
@@ -401,7 +408,7 @@ class HousekeeperBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMixin,
                 model_name="Housekeeper",
                 description="Invalid ID format in get request"
             )
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Query the Housekeeper objects with the given IDs
         housekeepers = Housekeeper.objects.filter(id__in=uuid_list)
@@ -431,7 +438,11 @@ class HousekeeperBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMixin,
 
         try:
             # ids = list(map(int, ids.split(',')))
-            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
         except ValueError:
             self.log_action(
                 user=request.user,
@@ -439,7 +450,7 @@ class HousekeeperBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMixin,
                 model_name="Housekeeper",
                 description="Invalid ID format in delete request"
             )
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Delete the Housekeeper objects with the given IDs
         count, _ = Housekeeper.objects.filter(id__in=uuid_list).delete()
@@ -458,7 +469,25 @@ class HousekeeperBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMixin,
 class HousekeeperListCreateView(MethodBasedPermissionsMixin,ActionLoggingMixin,generics.ListCreateAPIView):
     queryset = Housekeeper.objects.all()
     serializer_class = HousekeeperSerializer
-    # permission_classes = [AllowAny]
+    permission_classes = [AllowAny]
+    filterset_fields = [
+        'Name',
+        'Age',
+        'gender',
+        'nationality',
+        'religion',
+        'isactive',
+        'is_available',
+        'worked_before',
+        'id',
+        'Identification_number',
+        'employment_type',
+        'experience_years',
+        'rating',
+        'request_types',
+        'deleted_at',
+        'salary',
+    ]
     
     @swagger_auto_schema(
         manual_parameters=[
@@ -496,7 +525,6 @@ class HousekeeperListCreateView(MethodBasedPermissionsMixin,ActionLoggingMixin,g
                             'is_available': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                             'worked_before': openapi.Schema(type=openapi.TYPE_BOOLEAN),
                             'employment_type': openapi.Schema(type=openapi.TYPE_STRING),
-                          
                         }
                     )
                 )
@@ -578,7 +606,11 @@ class HireHousekeeperBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMi
         # Split the 'ids' parameter by commas and convert to integers
         try:
             # ids = list(map(int, ids.split(',')))
-            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
         except ValueError:
             self.log_action(
             user=request.user,
@@ -586,7 +618,7 @@ class HireHousekeeperBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMi
             model_name="HireReguest",
             description="Invalid ID format in request"
             )
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         
         housekeepers = HireRequest.objects.filter(id__in=uuid_list)
@@ -613,7 +645,7 @@ class HireHousekeeperBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMi
             )
         ]
     )
-      
+    
     def delete(self, request, *args, **kwargs):
         # Extract the 'ids' parameter from the query parameters
         ids = request.query_params.get('ids', '')
@@ -621,7 +653,12 @@ class HireHousekeeperBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMi
         # Split the 'ids' parameter by commas and convert to integers
         try:
             # ids = list(map(int, ids.split(',')))
-            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
+            # uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
             user=request.user,
@@ -629,7 +666,7 @@ class HireHousekeeperBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMi
             model_name="HireRequest",
             description="Invalid ID format in request"
             )
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Delete the Housekeeper objects with the given IDs
         count, _ = HireRequest.objects.filter(id__in=uuid_list).delete()
@@ -646,7 +683,8 @@ class HireHousekeeperBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMi
 class HireRequestListCreateView(MethodBasedPermissionsMixin,ActionLoggingMixin,generics.ListCreateAPIView):
     queryset = HireRequest.objects.all()
     serializer_class = HireRequestSerializer
-    # permission_classes = [AllowAny] 
+    permission_classes = [AllowAny] 
+    filterset_fields = '__all__'
     
     def get_queryset(self):
         queryset = HireRequest.objects.all()
@@ -681,6 +719,8 @@ class HireRequestListCreateView(MethodBasedPermissionsMixin,ActionLoggingMixin,g
         
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)  
+        count = RecruitmentRequest.objects.count() + HireRequest.objects.count() + TransferRequest.objects.count()
+        serializer.validated_data['request_number'] = f"{count + 1:05d}"
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
     
@@ -702,7 +742,7 @@ class HireRequestListCreateView(MethodBasedPermissionsMixin,ActionLoggingMixin,g
     # Retrieve all request details and include order_id
         request_details = hire_request_serializer.data.copy()  
         request_details['order_id'] = order_id  
-    
+
     # Send notification to the requester with request details
         phone_number = serializer.validated_data.get('requester_contact')
         test_mode = request.data.get('test_mode', False)
@@ -766,9 +806,15 @@ class HousekeeperBatchStatusUpdateView(MethodBasedPermissionsMixin,ActionLogging
     
     @transaction.atomic 
     def patch(self, request, *args, **kwargs):
+        print(request.query_params.items())
         # Extract the 'ids' and 'status' parameters from the query parameters
         ids = request.query_params.get('ids', '')
-        uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+        print(ids)
+        if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+        else:
+            ids = ids.split(',')
+        # uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         new_status_name = request.query_params.get('status', '')
         self.log_action(
         user=request.user,
@@ -780,7 +826,8 @@ class HousekeeperBatchStatusUpdateView(MethodBasedPermissionsMixin,ActionLogging
         
         try:
             # ids = list(map(int, ids.split(',')))
-            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            uuid_list = [UUID(id_str) for id_str in ids]
+            # uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
             user=request.user,
@@ -789,7 +836,7 @@ class HousekeeperBatchStatusUpdateView(MethodBasedPermissionsMixin,ActionLogging
             description="Invalid ID format in patch request"
         )
             
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         if not new_status_name:
             return Response({"error": "Status value is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -873,11 +920,16 @@ class RecruitmentRequestBatchDetailView(MethodBasedPermissionsMixin,ActionLoggin
     def get(self, request, *args, **kwargs):
         
         ids = request.query_params.get('ids', '')
+        print(ids)
 
         # Split the 'ids' parameter by commas and convert to integers
         try:
             # ids = list(map(int, ids.split(',')))
-            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
         except ValueError:
             self.log_action(
             user=request.user,
@@ -885,7 +937,7 @@ class RecruitmentRequestBatchDetailView(MethodBasedPermissionsMixin,ActionLoggin
             model_name="RecruitmentRequest",
             description="Invalid ID format in request"
             )
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         
         housekeepers = RecruitmentRequest.objects.filter(id__in=uuid_list)
@@ -896,7 +948,7 @@ class RecruitmentRequestBatchDetailView(MethodBasedPermissionsMixin,ActionLoggin
             user=request.user,
             action_type="Retrieved",
             model_name="RecruitmentRequest",
-            description=f"Successfully retrieved {len(housekeepers)} HireRequests for IDs: {ids}"
+            description=f"Successfully retrieved {len(housekeepers)} RecruitmentRequest for IDs: {ids}"
         )
         
        
@@ -922,7 +974,12 @@ class RecruitmentRequestBatchDetailView(MethodBasedPermissionsMixin,ActionLoggin
         
         try:
             # ids = list(map(int, ids.split(',')))
-            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
+            # uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
             user=request.user, 
@@ -930,7 +987,7 @@ class RecruitmentRequestBatchDetailView(MethodBasedPermissionsMixin,ActionLoggin
             model_name="RecruitmentRequest",
             description="Invalid ID format in request"
             )
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         
         count, _ = RecruitmentRequest.objects.filter(id__in=uuid_list).delete()
@@ -950,7 +1007,10 @@ class RecruitmentRequestBatchDetailView(MethodBasedPermissionsMixin,ActionLoggin
 class RecruitmentRequestListCreateView(MethodBasedPermissionsMixin,ActionLoggingMixin,generics.ListCreateAPIView):
     queryset = RecruitmentRequest.objects.all()
     serializer_class = RecruitmentRequestSerializer
-    # permission_classes = [AllowAny]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    # filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__'
+    permission_classes = [AllowAny]
     
     
     def get_queryset(self):
@@ -975,19 +1035,23 @@ class RecruitmentRequestListCreateView(MethodBasedPermissionsMixin,ActionLogging
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+        order_id = f"{serializer.validated_data.get('requester')}-{uuid.uuid4().hex[:8]}"
+        serializer.validated_data['order_id']= order_id
+        count = RecruitmentRequest.objects.count() + HireRequest.objects.count() + TransferRequest.objects.count()
+        serializer.validated_data['request_number'] = f"{count + 1:05d}"
+
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        
-        user = request.user,
+        # user = serializer.requester_obj,
+        # print(user)
         self.log_action(
-            user=user,
+            # user=user,
             action_type="Created",
             model_name="RecruitmentRequest"
         )
         
-        order_id = f"{serializer.instance.id}-{uuid.uuid4().hex[:8]}"
-        serializer.instance.order_id = order_id
+        # order_id = f"{serializer.instance.id}-{uuid.uuid4().hex[:8]}"
+        # serializer.instance.order_id = order_id
         serializer.instance.save()
         
         recruitment_request_serializer = RecruitmentRequestSerializer(serializer.instance)
@@ -996,8 +1060,9 @@ class RecruitmentRequestListCreateView(MethodBasedPermissionsMixin,ActionLogging
         request_details = recruitment_request_serializer.data.copy()  
         request_details['order_id'] = order_id 
     
-        phone_number = serializer.validated_data.get('request_contact')
+        phone_number = serializer.validated_data.get('requester_contact')
         test_mode = request.data.get('test_mode', False)
+
         success, message = send_message(phone_number, request_details, test_mode=test_mode)
     
         return Response({
@@ -1051,8 +1116,11 @@ class RecruitmentBatchStatusUpdateView(MethodBasedPermissionsMixin,ActionLogging
 
         
         try:
-            # ids = list(map(int, ids.split(',')))
-            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
         except ValueError:
             self.log_action(
             user=request.user,
@@ -1060,7 +1128,7 @@ class RecruitmentBatchStatusUpdateView(MethodBasedPermissionsMixin,ActionLogging
             model_name="RecruitmentRequest",
             description="Invalid ID format in patch request"
         )
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         if not new_status_name:
             return Response({"error": "Status value is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -1149,7 +1217,12 @@ class TransferRequestBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMi
         
         try:
             # ids = list(map(int, ids.split(',')))
-            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
+            # uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
             user=request.user if request.user.is_authenticated else None,
@@ -1157,7 +1230,7 @@ class TransferRequestBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMi
             model_name="TransferRequest",
             description="Invalid ID format in  request"
         )
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         
         housekeepers = TransferRequest.objects.filter(id__in=uuid_list)
@@ -1195,7 +1268,12 @@ class TransferRequestBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMi
       
         try:
             # ids = list(map(int, ids.split(',')))
-            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
+            # uuid_list = [UUID(id_str) for id_str in ids.split(',')]
         except ValueError:
             self.log_action(
                 user=request.user if request.user.is_authenticated else None,
@@ -1204,7 +1282,7 @@ class TransferRequestBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMi
                 description="Invalid ID format in request"
             )
            
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         
         count, _ = TransferRequest.objects.filter(id__in=uuid_list).delete()
@@ -1225,14 +1303,14 @@ class TransferRequestBatchDetailView(MethodBasedPermissionsMixin,ActionLoggingMi
 class TransferRequestListCreateView(MethodBasedPermissionsMixin,ActionLoggingMixin,generics.ListCreateAPIView):
     queryset = TransferRequest.objects.all()
     serializer_class = TransferRequestSerializer
-    # permission_classes = [AllowAny] 
+    permission_classes = [AllowAny] 
+    filterset_fields = '__all__'
     
     
     def get_queryset(self):
         queryset = TransferRequest.objects.all()
         client = self.request.query_params.get('client', None)
         if client is not None:
-            print("hiiiiiiiiiiiii")
             queryset = queryset.filter(requester_id=client)
         return queryset
     
@@ -1249,37 +1327,79 @@ class TransferRequestListCreateView(MethodBasedPermissionsMixin,ActionLoggingMix
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
-        self.perform_create(serializer)
+        # print(request.data)
+        # print(serializer.validated_data)
+
+        order_id = f"{serializer.validated_data.get('requester')}-{uuid.uuid4().hex[:8]}"
+        serializer.validated_data['order_id']= order_id
+        count = RecruitmentRequest.objects.count() + HireRequest.objects.count() + TransferRequest.objects.count()
+        serializer.validated_data['request_number'] = f"{count + 1:05d}"
+        print("vaildated: ", serializer.validated_data)
+        # self.perform_create(serializer)
+        serializer.save()
         headers = self.get_success_headers(serializer.data)
-    
-        
-        user = request.user if request.user.is_authenticated else None
+        print("data: ", serializer.data)
+        # user = serializer.requester_obj,
+        # print(user)
         self.log_action(
-            user=user,
+            # user=user,
             action_type="Created",
             model_name="TransferRequest"
         )
         
-        order_id = f"{serializer.instance.id}-{uuid.uuid4().hex[:8]}"
-        serializer.instance.order_id = order_id
-        serializer.instance.save()
+        # order_id = f"{serializer.instance.id}-{uuid.uuid4().hex[:8]}"
+        # serializer.instance.order_id = order_id
+        # print(serializer.instance)
+        # serializer.save()
         
-        transfer_request_serializer = TransferRequestSerializer(serializer.instance)
+        recruitment_request_serializer = TransferRequestSerializer(serializer.instance)
     
     
-        request_details = transfer_request_serializer.data.copy()  
+        request_details = recruitment_request_serializer.data.copy()  
         request_details['order_id'] = order_id 
     
-        phone_number = serializer.validated_data.get('request_contact')
-        
+        phone_number = serializer.validated_data.get('requester_contact')
         test_mode = request.data.get('test_mode', False)
+
         success, message = send_message(phone_number, request_details, test_mode=test_mode)
     
         return Response({
         'message': message,
-        'request_details': request_details  
+        'request_details': request_details  # Include all request details in the response
         }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
+        # serializer = self.get_serializer(data=request.data)
+        # serializer.is_valid(raise_exception=True)
+        
+        # self.perform_create(serializer)
+        # headers = self.get_success_headers(serializer.data)
+    
+        
+        # user = request.user if request.user.is_authenticated else None
+        # self.log_action(
+        #     user=user,
+        #     action_type="Created",
+        #     model_name="TransferRequest"
+        # )
+        
+        # order_id = f"{serializer.instance.id}-{uuid.uuid4().hex[:8]}"
+        # serializer.instance.order_id = order_id
+        # serializer.instance.save()
+        
+        # transfer_request_serializer = TransferRequestSerializer(serializer.instance)
+    
+    
+        # request_details = transfer_request_serializer.data.copy()  
+        # request_details['order_id'] = order_id 
+    
+        # phone_number = serializer.validated_data.get('request_contact')
+        
+        # test_mode = request.data.get('test_mode', False)
+        # success, message = send_message(phone_number, request_details, test_mode=test_mode)
+    
+        # return Response({
+        # 'message': message,
+        # 'request_details': request_details  
+        # }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR, headers=headers)
         
 
     
@@ -1293,7 +1413,7 @@ class TransferRequestDetailView(MethodBasedPermissionsMixin,generics.RetrieveUpd
     
 class TransferBatchStatusUpdateView(MethodBasedPermissionsMixin,ActionLoggingMixin,APIView):
     serializer_class= UpdateHireRequest
-    
+    permission_classes = [AllowAny]
  
     
     @swagger_auto_schema(
@@ -1330,7 +1450,11 @@ class TransferBatchStatusUpdateView(MethodBasedPermissionsMixin,ActionLoggingMix
        
         try:
             # ids = list(map(int, ids.split(',')))
-            uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
         except ValueError:
             self.log_action(
                 user=request.user if request.user.is_authenticated else None,
@@ -1338,7 +1462,7 @@ class TransferBatchStatusUpdateView(MethodBasedPermissionsMixin,ActionLoggingMix
                 model_name="TransferRequest",
                 description="Invalid ID format in request"
             )
-            return Response({"error": "Invalid ID format. Please provide a comma-separated list of integers."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
 
         if not new_status_name:
             return Response({"error": "Status value is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -1408,7 +1532,7 @@ class TaxesCreateView(generics.ListCreateAPIView):
     queryset = Taxes.objects.all()
     serializer_class = TaxesSerializer
     permission_classes = [RolePermission]
- 
+    filterset_fields = '__all__'
 
     def get_permissions(self):
         if self.request.method == 'GET':
@@ -1441,8 +1565,197 @@ class TaxesDetailView(generics.RetrieveUpdateDestroyAPIView):
 
         return super().get_permissions()
         
+class TaxesBatchDetailView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = TaxesSerializer
+     
+    @swagger_auto_schema(
+         manual_parameters=[
+             openapi.Parameter(
+                'ids',
+                openapi.IN_QUERY,
+                description="Comma-separated list of IDs",
+                type=openapi.TYPE_STRING
+            )
+        ]
+    )
     
-    
-    
-    
+    def get(self, request, *args, **kwargs):
+        # Extract the 'ids' parameter from the query parameters
+        ids = request.query_params.get('ids', '')
 
+        # Split the 'ids' parameter by commas and convert to UUIDs
+        try:
+            # ids = list(map(int, ids.split(',')))
+            # uuid_list = [UUID(id_str) for id_str in ids.split(',')]
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
+        except ValueError:
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Query the Housekeeper objects with the given IDs
+        employee= Taxes.objects.filter(id__in=uuid_list)
+
+        # Serialize the data
+        serializer = TaxesSerializer(employee, many=True)
+        
+        # Return the serialized data
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'ids',
+                openapi.IN_QUERY,
+                description="Comma-separated list of IDs",
+                type=openapi.TYPE_STRING
+            )
+        ]
+    )
+    
+    
+    def delete(self, request, *args, **kwargs):
+        # Extract the 'ids' parameter from the query parameters
+        ids = request.query_params.get('ids', '')
+
+        # Split the 'ids' parameter by commas and convert to UUIDs
+        try:
+            # ids = list(map(int, ids.split(',')))
+            if ids.endswith(','):
+                ids = ids.split(',')[:-1]
+            else:
+                ids = ids.split(',')
+            uuid_list = [UUID(id_str) for id_str in ids]
+        except ValueError:
+            return Response({"error": "Invalid ID format. Please provide a comma-separated list of UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Delete the Housekeeper objects with the given IDs
+        count, _ = Taxes.objects.filter(id__in=uuid_list).delete()
+
+        # Return the count of deleted objects
+        return Response({"deleted": count}, status=status.HTTP_204_NO_CONTENT)
+
+class NotificationListCreateView(generics.ListCreateAPIView):
+    permission_classes = [AllowAny]
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
+    filterset_fields = '__all__'
+
+    def post(self, request, *args, **kwargs):
+        if isinstance(request.data, QueryDict):
+            data = { key: value[0] for key, value in dict(request.data.copy()).items() }
+        else:
+            data = request.data.copy()
+        if request.data.get("all"):
+            data["users"] = list(CustomUser.objects.all().values_list('id', flat=True))
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+
+        channel_layer = get_channel_layer()
+
+        for user in data["users"]:
+            token = PushNotificationToken.objects.filter(user__id=user)
+            print(token)
+            if token.exists():
+                send_push_notification(token.first().fcm_token, serializer.data)
+            # message_payload = {
+            #     "title": serializer.data["title"],
+            #     "body": serializer.data["message"],
+            #     "data": {"notification": serializer.data} 
+            # }
+            # print(devices)
+            # if devices.exists():
+            #     devices.send_message(
+            #         **message_payload
+            #     )
+
+            async_to_sync(channel_layer.group_send)(
+                f"notifications_{user}",
+                {
+                    "type": "send_notification",
+                    "notification": serializer.data
+                }
+            )
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
+    @swagger_auto_schema(
+        responses={
+            200: NotificationSerializer(many=True)
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        # if self.request.user.is_anonymous:
+        #     return Notification.objects.none()
+        if isinstance(self.request.user, User):
+            return Notification.objects.all()
+        else:
+            return Notification.objects.filter(users__id=self.request.user.id)
+
+class NotificationDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
+    permission_classes = [AllowAny]
+
+    def patch(self, request, *args, **kwargs):
+        if isinstance(request.data, QueryDict):
+            data = { key: value[0] for key, value in dict(request.data.copy()).items() }
+        else:
+            data = request.data.copy()
+        if request.data.get("all"):
+            data["users"] = list(CustomUser.objects.all().values_list('id', flat=True))
+        serializer = self.get_serializer(self.get_object(), data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+    
+    def update(self, request, *args, **kwargs):
+        if isinstance(request.data, QueryDict):
+            data = { key: value[0] for key, value in dict(request.data.copy()).items() }
+        else:
+            data = request.data.copy()
+        if request.data.get("all"):
+            data["users"] = list(CustomUser.objects.all().values_list('id', flat=True))
+        serializer = self.get_serializer(self.get_object(), data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+# class RegisterDeviceView(generics.CreateAPIView):
+#     def post(self, request):
+#         token = request.data.get('token')
+#         if token:
+#             device, created = FCMDevice.objects.update_or_create(
+#                 user=request.user,
+#                 defaults={'registration_id': token, 'type': 'android'}
+#             )
+#             return Response({"message": "Device registered successfully"}, status=status.HTTP_200_OK)
+#         return Response({"error": "No token provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+# class SendNotificationView(APIView):
+#     def post(self, request):
+#         title = request.data.get('title', 'Default Title')
+#         body = request.data.get('body', 'Default Body')
+#         devices = FCMDevice.objects.all()
+#         devices.send_message(
+#             title=title,
+#             body=body,
+#             data={"extra_info": "Some extra data"}
+#         )
+#         return Response({"message": "Notifications sent!"}, status=status.HTTP_200_OK)
+
+# class FCMDeviceViewset(FCMDeviceAuthorizedViewSet):
+#     queryset = CustomFCMDevice.objects.all()
+
+class PushNotificationTokenViewset(viewsets.ModelViewSet):
+    queryset = PushNotificationToken.objects.all()
+    serializer_class = PushNotificationTokenSerializer
+    permission_classes = [AllowAny]

@@ -12,6 +12,3 @@ def update_housekeeper_availability(sender, instance, **kwargs):
         print(f"Housekeeper {housekeeper.Name} availability set to False")
     else:
         print(f"HireRequest {instance.id} status is {instance.status.Status}")
-
-
-       

@@ -7,16 +7,18 @@ from service_type.models import ServiceType
 from perice_per_nationality.models import PericePerNationality
 from django.core.exceptions import ValidationError
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 import uuid
 from temporary_discount.models import TempoararyDiscount,CustomPackage
 from django.utils import timezone
 from django.core.validators import RegexValidator
 from decimal import Decimal
+# from fcm_django.models import FCMDevice
+# from temporary_discount.serializers import CustomPackageSerializer
 
 
 
-User = get_user_model()
+# User = get_user_model()
 class SoftDeleteManager(models.Manager):
     def get_queryset(self):
         #  filters out soft-deleted records
@@ -96,7 +98,7 @@ class Taxes(models.Model):
 
 class Status(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    Status= models.CharField(max_length=50,unique=True)
+    Status= models.CharField(max_length=50)
     is_active = models.BooleanField(default=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
     
@@ -146,7 +148,6 @@ class Religion(models.Model):
     def __str__(self):
         return self.name
     
-    
 class EmploymentType(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100,unique=True)
@@ -162,8 +163,8 @@ class EmploymentType(models.Model):
         self.save()
 
     def restore(self):
-        # Restore a soft-deleted record 
-        self.deleted_at = None
+        # Restore a soft-deleted record         
+        self.deleted_at = None        
         self.save()
 
     def hard_delete(self):
@@ -195,12 +196,12 @@ class Housekeeper(models.Model):
     worked_before = models.BooleanField(default=True)
     Identification_number=models.CharField(max_length=150,unique=True)
     employment_type = models.ForeignKey(EmploymentType,on_delete=models.CASCADE,null=True)
-    experience_years = models.IntegerField(null=True,blank=True)  
+    experience_years = models.IntegerField(null=True,blank=True)
     languages_spoken = models.JSONField(null=True,blank=True) 
     rating = models.FloatField(null=True,blank=True) 
     request_types= models.ManyToManyField(ServiceType, through='HousekeeperRequestType',related_name='housekeeper')
     deleted_at = models.DateTimeField(null=True, blank=True)
-    
+    salary = models.IntegerField()
     objects = SoftDeleteManager()  
     all_objects = models.Manager()  
 
@@ -233,6 +234,9 @@ class Housekeeper(models.Model):
         return self.Name
     
     
+def validate_saudi_national_id(national_id):
+    # Your logic to validate the Saudi national ID
+    pass
     
 class HousekeeperRequestType(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -279,7 +283,7 @@ class HireRequest(models.Model):
         return ServiceType.objects.get(name='Hire')  
     
     def get_default_status():
-        return Status.objects.get(Status='Pending')
+        return Status.objects.get(Status='pending')
     
     def get_default_taxes():
         return Taxes.objects.get(name='default')
@@ -288,15 +292,18 @@ class HireRequest(models.Model):
     readonly_fields = ('pericepernationality_id',)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='hire_requests',)
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
-    phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$', message="contact numbber must be entered in the format: '+999999999'. Up to 15 digits allowed.")
-    requester_contact = models.CharField(validators=[phone_regex],max_length=17)
+    phone_regex_length = RegexValidator(regex=r'^\d{12}$', message="contact number must have 12 digits.")
+    phone_regex_start = RegexValidator(regex=r'^966', message="contact number must start with 966.")
+    requester_contact = models.CharField(validators=[phone_regex_start, phone_regex_length], max_length=17,)
+    # phone_regex = RegexValidator(regex=r'^\?\d{9,15}$', message="contact numbber must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    # requester_contact = models.CharField(validators=[phone_regex],max_length=17)
     request_date = models.DateField(default=get_current_date)
     requester_firstName = models.CharField(max_length=100,) 
     requester_lastName = models.CharField(max_length=100,)  
     requester_fatherName = models.CharField(max_length=100,) 
     requester_city = models.CharField(max_length=100,) 
     duration=models.IntegerField()
-    total_price = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True,)
     price=models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
     # status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
     status = models.ForeignKey(Status, on_delete=models.CASCADE, default=get_default_status,blank=True)
@@ -307,7 +314,8 @@ class HireRequest(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     tax_id = models.ForeignKey(Taxes, null=True, on_delete=models.CASCADE,blank=True,default=get_default_taxes)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
-    
+    request_number = models.CharField(max_length=255, blank=True, null=True, default='')
+
     objects = SoftDeleteManager()  
     all_objects = models.Manager()  
 
@@ -334,41 +342,80 @@ class HireRequest(models.Model):
         if not self.order_id:
             self.order_id = f"{self.id}-{uuid.uuid4().hex[:8]}"
             
-       
-
         if self.housekeeper:
-            try:
-                perice = CustomPackage.objects.get(
-                    nationallities=self.housekeeper.nationality,
-                    request_type=self.request_type, 
-                    employment_type=self.housekeeper.employment_type,
-                    
-                    
-                )
+            # try:
                 
-                print(perice.final_price)
-                
-                self.price=perice.final_price
-                
-                add_tax = Decimal(0)  
-
-                if self.tax_id:
-                    tax = Decimal(self.tax_id.amount)
-                    tax_fraction = tax / Decimal(100)
-                    print(tax_fraction)
-                    add_tax = perice.final_price * tax_fraction  
-                    print(add_tax)
-                    self.tax_amount=add_tax
-                    
-                total_perice = perice.final_price + add_tax  
-                self.total_price = total_perice
-                print("hiiiiiiiiiiiiiiiiiii")
-               
-                
-            except CustomPackage.DoesNotExist:
-                print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+            if not self.custom_package_id:
                 self.custom_package_id = None
                 self.total_price=0.0
+            else:
+                # price = CustomPackage.objects.get(
+                #     nationallities=self.housekeeper.nationality,
+                #     request_type=self.request_type, 
+                #     employment_type=self.housekeeper.employment_type,
+                # )
+        #             def get_total(self, obj):
+        # tax = Taxes.objects.filter(name='default')
+        # if not tax.exists():
+        #     tax = 0
+        # else:
+        #     tax = int(tax.first().amount)
+        # nationality = obj.nationality
+        # nat = CustomPackageNationallity.objects.filter(nationallity=nationality)
+        # if nat.exists():
+        #     nat = nat.first()
+        #     custom_package = nat.custom_package
+        #     serializer = CustomPackageSerializer(custom_package)
+        #     if serializer.data['has_discount']:
+        #         return int(serializer.data['old_price']) + int((tax / 100) * int(serializer.data['old_price']))
+        #     else:
+        #         return int(serializer.data['new_price']) + int((tax / 100) * int(serializer.data['old_price']))
+                price = self.custom_package_id
+                print(price.final_price)
+                self.total_price = price.final_price
+                if price.temporary_discount and price.temporary_discount.is_active and price.temporary_discount.start_date <= timezone.now() <= price.temporary_discount.end_date:
+                    self.total_price = int(self.total_price) - (price.temporary_discount.discount_percentage / 100 * int(self.total_price))
+                tax = Taxes.objects.filter(name='default')
+                if not tax.exists():
+                    tax = 0
+                else:
+                    tax = int(tax.first().amount)
+                if tax > 0:
+                    self.total_price = int(self.total_price) + (tax / 100 * int(self.total_price))
+
+        # if self.housekeeper:
+        #     try:
+        #         perice = CustomPackage.objects.get(
+        #             nationallities=self.housekeeper.nationality,
+        #             request_type=self.request_type, 
+        #             employment_type=self.housekeeper.employment_type,
+                    
+                    
+        #         )
+                
+        #         print(perice.final_price)
+                
+        #         self.price=perice.final_price
+                
+        #         add_tax = Decimal(0)  
+
+        #         if self.tax_id:
+        #             tax = Decimal(self.tax_id.amount)
+        #             tax_fraction = tax / Decimal(100)
+        #             print(tax_fraction)
+        #             add_tax = perice.final_price * tax_fraction  
+        #             print(add_tax)
+        #             self.tax_amount=add_tax
+                    
+        #         total_perice = perice.final_price + add_tax  
+        #         self.total_price = total_perice
+        #         print("hiiiiiiiiiiiiiiiiiii")
+               
+                
+        #     except CustomPackage.DoesNotExist:
+        #         print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+        #         self.custom_package_id = None
+        #         self.total_price=0.0
                 
            
             #     raise ValidationError('No matching PericePerNationality found. Please ensure the PericePerNationality is set correctly.')
@@ -391,7 +438,7 @@ class RecruitmentRequest(models.Model):
         return timezone.now().date()
     
     def get_default_status():
-        return Status.objects.get(Status='Pending')
+        return Status.objects.get(Status='pending')
     
     
     def get_default_taxes():
@@ -400,8 +447,11 @@ class RecruitmentRequest(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='recruitment_requests')
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  
-    phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$', message="contact numbber must be entered in the format: '+999999999'. Up to 15 digits allowed.")
-    requester_contact = models.CharField(validators=[phone_regex], max_length=17,)
+    phone_regex_length = RegexValidator(regex=r'^\d{12}$', message="contact number must have 12 digits.")
+    phone_regex_start = RegexValidator(regex=r'^966', message="contact number must start with 966.")
+    requester_contact = models.CharField(validators=[phone_regex_start, phone_regex_length], max_length=17,)
+    # phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$', message="contact number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    # requester_contact = models.CharField(validators=[phone_regex], max_length=17,)
     visa_status= models.BooleanField(default=False)
     request_date = models.DateField(default=get_current_date)
     requester_firstName = models.CharField(max_length=100,) 
@@ -421,7 +471,8 @@ class RecruitmentRequest(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     tax_id = models.ForeignKey(Taxes, null=True, on_delete=models.CASCADE,blank=True,default=get_default_taxes)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
-    
+    request_number = models.CharField(max_length=255, blank=True, null=True, default='')
+
     objects = SoftDeleteManager()  
     all_objects = models.Manager()  
     
@@ -448,37 +499,62 @@ class RecruitmentRequest(models.Model):
         
 
         if self.housekeeper:
-            try:
-                perice = CustomPackage.objects.get(
-                    nationallities=self.housekeeper.nationality,
-                    request_type=self.request_type, 
-                    employment_type=self.housekeeper.employment_type,
-                    
-                    
-                )
+            # try:
                 
-                self.price=perice.final_price
-                
-                add_tax = Decimal(0)  
-
-                if self.tax_id:
-                    tax = Decimal(self.tax_id.amount)
-                    tax_fraction = tax / Decimal(100)
-                    print(tax_fraction)
-                    add_tax = perice.final_price * tax_fraction  
-                    print(add_tax)
-                    self.tax_amount=add_tax
-                    
-                
-
-                total_perice = perice.final_price + add_tax  
-                self.total_price = total_perice
-                print("hiiiiiiiiiiiiiiiiiii i got ittttttttttttttttttttt")
-            
-                
-            except CustomPackage.DoesNotExist:
+            if not self.custom_package_id:
                 self.custom_package_id = None
                 self.total_price=0.0
+            else:
+                # price = CustomPackage.objects.get(
+                #     nationallities=self.housekeeper.nationality,
+                #     request_type=self.request_type, 
+                #     employment_type=self.housekeeper.employment_type,
+                # )
+        #             def get_total(self, obj):
+        # tax = Taxes.objects.filter(name='default')
+        # if not tax.exists():
+        #     tax = 0
+        # else:
+        #     tax = int(tax.first().amount)
+        # nationality = obj.nationality
+        # nat = CustomPackageNationallity.objects.filter(nationallity=nationality)
+        # if nat.exists():
+        #     nat = nat.first()
+        #     custom_package = nat.custom_package
+        #     serializer = CustomPackageSerializer(custom_package)
+        #     if serializer.data['has_discount']:
+        #         return int(serializer.data['old_price']) + int((tax / 100) * int(serializer.data['old_price']))
+        #     else:
+        #         return int(serializer.data['new_price']) + int((tax / 100) * int(serializer.data['old_price']))
+                price = self.custom_package_id
+                print(price.final_price)
+                self.total_price = price.final_price
+                if price.temporary_discount and price.temporary_discount.is_active and price.temporary_discount.start_date <= timezone.now() <= price.temporary_discount.end_date:
+                    self.total_price = int(self.total_price) - (price.temporary_discount.discount_percentage / 100 * int(self.total_price))
+                tax = Taxes.objects.filter(name='default')
+                if not tax.exists():
+                    tax = 0
+                else:
+                    tax = int(tax.first().amount)
+                if tax > 0:
+                    self.total_price = int(self.total_price) + (tax / 100 * int(self.total_price))
+                # if self.tax_id:
+                #     tax = Decimal(self.tax_id.amount)
+                #     tax_fraction = tax / Decimal(100)
+                #     print(tax_fraction)
+                #     add_tax = price.final_price * tax_fraction  
+                #     print(add_tax)
+                #     self.tax_amount=add_tax
+                    
+                
+
+                # total_perice = price.final_price + add_tax  
+                # self.total_price = total_perice
+            
+                
+            # except CustomPackage.DoesNotExist:
+            #     self.custom_package_id = None
+            #     self.total_price=0.0
                 
             # # Raise a validation error to be caught and displayed
             #     raise ValidationError('No matching PericePerNationality found. Please ensure the PericePerNationality is set correctly.')
@@ -498,7 +574,7 @@ class TransferRequest(models.Model):
         return timezone.now().date()
     
     def get_default_status():
-        return Status.objects.get(Status='Pending')
+        return Status.objects.get(Status='pending')
      
     
     def get_default_taxes():
@@ -508,9 +584,11 @@ class TransferRequest(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     housekeeper = models.ForeignKey(Housekeeper, on_delete=models.CASCADE, related_name='transfer_requests')
     requester = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Link to User model
-    request_date = models.DateField(default=get_current_date) 
-    phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$', message="contact numbber must be entered in the format: '+999999999'. Up to 15 digits allowed.")
-    requester_contact = models.CharField(validators=[phone_regex], max_length=17,)
+    request_date = models.DateField(default=get_current_date)
+    
+    phone_regex_length = RegexValidator(regex=r'^\d{12}$', message="contact number must have 12 digits.")
+    phone_regex_start = RegexValidator(regex=r'^966', message="contact number must start with 966.")
+    requester_contact = models.CharField(validators=[phone_regex_start, phone_regex_length], max_length=17,)
     # status= models.ForeignKey(Status, on_delete=models.CASCADE,blank=True)  # Link to Status model
     status = models.ForeignKey(Status, on_delete=models.CASCADE, default=get_default_status,blank=True)
     requester_firstName = models.CharField(max_length=100,) 
@@ -528,7 +606,8 @@ class TransferRequest(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     tax_id = models.ForeignKey(Taxes, null=True, on_delete=models.CASCADE,blank=True,default=get_default_taxes)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
-    
+    request_number = models.CharField(max_length=255, blank=True, null=True, default='')
+
     objects = SoftDeleteManager()  
     all_objects = models.Manager() 
 
@@ -553,40 +632,79 @@ class TransferRequest(models.Model):
     
     def save(self, *args, **kwargs):
        
-
         if self.housekeeper:
-            try:
-                perice = CustomPackage.objects.get(
-                    nationallities=self.housekeeper.nationality,
-                    request_type=self.request_type, 
-                    employment_type=self.housekeeper.employment_type,
+            # try:
+                
+            if not self.custom_package_id:
+                self.custom_package_id = None
+                self.total_price=0.0
+            else:
+                # price = CustomPackage.objects.get(
+                #     nationallities=self.housekeeper.nationality,
+                #     request_type=self.request_type, 
+                #     employment_type=self.housekeeper.employment_type,
+                # )
+        #             def get_total(self, obj):
+        # tax = Taxes.objects.filter(name='default')
+        # if not tax.exists():
+        #     tax = 0
+        # else:
+        #     tax = int(tax.first().amount)
+        # nationality = obj.nationality
+        # nat = CustomPackageNationallity.objects.filter(nationallity=nationality)
+        # if nat.exists():
+        #     nat = nat.first()
+        #     custom_package = nat.custom_package
+        #     serializer = CustomPackageSerializer(custom_package)
+        #     if serializer.data['has_discount']:
+        #         return int(serializer.data['old_price']) + int((tax / 100) * int(serializer.data['old_price']))
+        #     else:
+        #         return int(serializer.data['new_price']) + int((tax / 100) * int(serializer.data['old_price']))
+                price = self.custom_package_id
+                print(price.final_price)
+                self.total_price = price.final_price
+                if price.temporary_discount and price.temporary_discount.is_active and price.temporary_discount.start_date <= timezone.now() <= price.temporary_discount.end_date:
+                    self.total_price = int(self.total_price) - (price.temporary_discount.discount_percentage / 100 * int(self.total_price))
+                tax = Taxes.objects.filter(name='default')
+                if not tax.exists():
+                    tax = 0
+                else:
+                    tax = int(tax.first().amount)
+                if tax > 0:
+                    self.total_price = int(self.total_price) + (tax / 100 * int(self.total_price))
+        # if self.housekeeper:
+        #     try:
+        #         perice = CustomPackage.objects.get(
+        #             nationallities=self.housekeeper.nationality,
+        #             request_type=self.request_type, 
+        #             employment_type=self.housekeeper.employment_type,
                     
                     
-                )
+        #         )
                 
-                self.price=perice.final_price
+        #         self.price=perice.final_price
                 
-                add_tax = Decimal(0)  
+        #         add_tax = Decimal(0)  
 
-                if self.tax_id:
-                    tax = Decimal(self.tax_id.amount)
-                    tax_fraction = tax / Decimal(100)
-                    print(tax_fraction)
-                    add_tax = perice.final_price * tax_fraction  
-                    print(add_tax)
-                    self.tax_amount=add_tax
+        #         if self.tax_id:
+        #             tax = Decimal(self.tax_id.amount)
+        #             tax_fraction = tax / Decimal(100)
+        #             print(tax_fraction)
+        #             add_tax = perice.final_price * tax_fraction  
+        #             print(add_tax)
+        #             self.tax_amount=add_tax
                     
                 
 
-                total_perice = perice.final_price + add_tax  
-                self.total_price = total_perice
-                print("hiiiiiiiiiiiiiiiiiii")
+        #         total_perice = perice.final_price + add_tax  
+        #         self.total_price = total_perice
+        #         print("hiiiiiiiiiiiiiiiiiii")
             
               
                 
-            except CustomPackage.DoesNotExist:
-                self.custom_package_id = None
-                self.total_price=0.0
+        #     except CustomPackage.DoesNotExist:
+        #         self.custom_package_id = None
+        #         self.total_price=0.0
                 
             # # Raise a validation error to be caught and displayed
             #     raise ValidationError('No matching PericePerNationality found. Please ensure the PericePerNationality is set correctly.')
@@ -597,17 +715,21 @@ class TransferRequest(models.Model):
 
     def __str__(self):
         return f"Transfer Request by {self.requester.fullName} for Housekeeper {self.housekeeper.Name}"
-    
 
-    
-    
+class Notification(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    users = models.ManyToManyField(CustomUser, related_name='notifications')
+    message = models.TextField()
+    title = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    all = models.BooleanField(default=False)
 
 
+    def __str__(self):
+        return self.message
     
-    
-    
-    
-    
-    
-    
-
+class PushNotificationToken(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    fcm_token = models.CharField(max_length=99999999, unique=True)

@@ -1,9 +1,9 @@
 from rest_framework import serializers
-from .models import Housekeeper, HireRequest, RecruitmentRequest, TransferRequest,Status,HousekeeperRequestType
+from .models import Notification, Housekeeper, HireRequest, RecruitmentRequest, TransferRequest,Status,HousekeeperRequestType
 from login.models import CustomUser
 from nationality.views import NationalitySerializer
 from nationality.models import Nationallity
-from .models import ActionLog,Religion,EmploymentType,Taxes
+from .models import ActionLog,Religion,EmploymentType,Taxes, PushNotificationToken
 from django.utils import timezone
 from decimal import Decimal
 from service_type.models import ServiceType
@@ -14,6 +14,10 @@ from .employment_type_view import EmploymentTypeSerializer
 from service_type.serializers import ServiceTypeSerializer
 from .models import HousekeeperRequestType
 from nationality.models import Nationallity
+from temporary_discount.models import CustomPackage, CustomPackageNationallity
+from temporary_discount.serializers import CustomPackageSerializer
+from login.serializers import RegisterSerializer
+
 
 
 
@@ -33,8 +37,7 @@ class TaxesSerializer(serializers.ModelSerializer):
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = '__all__'
-
+        fields = ['id', 'fullName', 'phone_number', 'email', 'dateOfBirth']
     
 
 class ActionLogSerializer(serializers.ModelSerializer):
@@ -113,10 +116,12 @@ class HousekeeperSerializer(serializers.ModelSerializer):
     # employment_type = EmploymentTypeSerializer()
     # nationality = NationalitySerializer()
     
+    # total_price = serializers.SerializerMethodField(method_name='get_total')
    
     # request_types = ServiceTypeSerializer(many=True)
     #requests_types = HousekeeperRequestTypeSerializer(source='housekeeperrequesttype_set', many=True)
-    salary = serializers.SerializerMethodField()
+    # salary = serializers.SerializerMethodField()
+    # salary = serializers.DecimalField(max_digits=10, decimal_places=2)
     request_types_detail= serializers.SerializerMethodField()
     
     
@@ -129,16 +134,16 @@ class HousekeeperSerializer(serializers.ModelSerializer):
     religion = serializers.PrimaryKeyRelatedField(
         queryset=Religion.objects.all(),
       
-        write_only=True
+        # write_only=True
     )
     employment_type = serializers.PrimaryKeyRelatedField(
         queryset=EmploymentType.objects.all(),
       
-        write_only=True
+        # write_only=True
     )
     nationality = serializers.PrimaryKeyRelatedField(
         queryset=Nationallity.objects.all(),
-        write_only=True
+        # write_only=True
     )
     
    
@@ -171,19 +176,44 @@ class HousekeeperSerializer(serializers.ModelSerializer):
     class Meta:
         model = Housekeeper
         fields = '__all__'
-        
-    def get_salary(self, obj):
-        custom_package = self.context.get('custom_package')
-        if custom_package:
-            print("hhhhhhhhhhhhhhhhhhhhhhhhhh")
-            if obj.worked_before:
-                print("jennnnnnnnnnnnnnnnnn")
-                return custom_package.worked_before_salary
+
+    
+    def get_total(self, obj):
+        tax = Taxes.objects.filter(name='default')
+        if not tax.exists():
+            tax = 0
+        else:
+            tax = int(tax.first().amount)
+        nationality = obj.nationality
+        nat = CustomPackageNationallity.objects.filter(nationallity=nationality)
+        if nat.exists():
+            nat = nat.first()
+            custom_package = nat.custom_package
+            serializer = CustomPackageSerializer(custom_package)
+            if serializer.data['has_discount']:
+                return int(serializer.data['old_price']) + int((tax / 100) * int(serializer.data['old_price']))
             else:
-                print("hhhhhhhhhhhhhhhh")
-                return custom_package.new_housekeeper_salary
+                return int(serializer.data['new_price']) + int((tax / 100) * int(serializer.data['old_price']))
+
+    # def get_salary(self, obj):
+        # nationality = obj.nationality
+        # nat = CustomPackageNationallity.objects.filter(nationallity=nationality)
+        # if nat.exists():
+        #     nat = nat.first()
+        #     custom_package = nat.custom_package
+        #     serializer = CustomPackageSerializer(custom_package)
+        #     if serializer.data['has_discount']:
+        #         return int(serializer.data['old_price'])
+        #     else:
+        #         return int(serializer.data['new_price'])
+        # custom_package = CustomPackage.objects.filter(custom_package_nationallities__contatins=nat)
+        # if custom_package.exists():
+        #     if obj.worked_before:
+        #         return custom_package.worked_before_salary
+        #     else:
+        #         return custom_package.new_housekeeper_salary
        
-        return 0
+        # return 0
     
     
     def to_representation(self, instance):
@@ -217,19 +247,38 @@ class HousekeeperSerializer(serializers.ModelSerializer):
             instance.request_types.set(request_type_ids)
         return instance
 
-    
-       
-        
-        
-    
+    def validate(self, attrs):
+        worked_before = attrs.get('worked_before')
+        experience_years = attrs.get('experience_years')
+        if worked_before:
+            if not experience_years or experience_years == 0:
+                raise serializers.ValidationError('Please enter experience years')
+        return super().validate(attrs)
 
 class HireRequestSerializer(serializers.ModelSerializer):
     employment_type = serializers.SerializerMethodField()
-   
+    requester = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
     housekeeper_detail = serializers.SerializerMethodField()
     status_detail = serializers.SerializerMethodField()
-    
-    
+    total_price = serializers.SerializerMethodField()
+
+
+    def get_total_price(self, obj):
+        tax = Taxes.objects.filter(name='default')
+        if not tax.exists():
+            tax = 0
+        else:
+            tax = int(tax.first().amount)
+        custom_package = obj.custom_package_id
+        # nat = CustomPackageNationallity.objects.filter(nationallity=nationality)
+        if custom_package:
+            serializer = CustomPackageSerializer(custom_package)
+            # print(serializer.data.get('new_price'))
+            return int(serializer.data.get('new_price')) + int((tax / 100) * int(serializer.data.get('new_price')))
+            # if serializer.data['has_discount']:
+                # return int(serializer.data['new_price']) + int((tax / 100) * int(serializer.data['old_price']))
+            # else:
+                # return int(serializer.data['new_price']) + int((tax / 100) * int(serializer.data['old_price']))
    
     
     # old_price = serializers.SerializerMethodField()   
@@ -246,11 +295,11 @@ class HireRequestSerializer(serializers.ModelSerializer):
     
            
     def create(self, validated_data):
-        request = self.context.get('request')
-        if request and hasattr(request, 'user'):
-            validated_data['requester'] = request.user
-        else:
-            raise serializers.ValidationError("Requester information is missing.")
+        # request = self.context.get('request')
+        # if request and hasattr(request, 'user'):
+        #     validated_data['requester'] = request.user
+        # else:
+        #     raise serializers.ValidationError("Requester information is missing.")
         return super().create(validated_data)
     
     
@@ -329,10 +378,14 @@ class RecruitmentRequestSerializer(serializers.ModelSerializer):
     # new_price = serializers.SerializerMethodField()
     # has_discount = serializers.SerializerMethodField()
     # requester = serializers.UUIDField(read_only=True)
-    # requester = CustomUserSerializer(read_only=True)
+    total_price = serializers.SerializerMethodField()
+    requester = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
+    # requester_detail = CustomUserSerializer(source='requester', read_only=True)
     employment_type = serializers.SerializerMethodField()
     housekeeper_detail = serializers.SerializerMethodField()
     status_detail = serializers.SerializerMethodField()
+    
+    # user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), write_only=True, default=)
     # housekeeper = HousekeeperSerializer()
     # request_type = ServiceTypeSerializer()
     # status=StatusSerializer()
@@ -344,11 +397,11 @@ class RecruitmentRequestSerializer(serializers.ModelSerializer):
         
         
     def create(self, validated_data):
-        request = self.context.get('request')
-        if request and hasattr(request, 'user'):
-            validated_data['requester'] = request.user
-        else:
-            raise serializers.ValidationError("Requester information is missing.")
+        # request = self.context.get('request')
+        # if request and hasattr(request, 'user') and request.user.is_authenticated:
+        #     validated_data['requester'] = request.user
+        # else:
+        #     raise serializers.ValidationError("Requester information is missing.")
         return super().create(validated_data)
     
     
@@ -359,12 +412,29 @@ class RecruitmentRequestSerializer(serializers.ModelSerializer):
     
         return representation
     
-    
+    def get_total_price(self, obj):
+        tax = Taxes.objects.filter(name='default')
+        if not tax.exists():
+            tax = 0
+        else:
+            tax = int(tax.first().amount)
+        custom_package = obj.custom_package_id
+        # nat = CustomPackageNationallity.objects.filter(nationallity=nationality)
+        if custom_package:
+            serializer = CustomPackageSerializer(custom_package)
+            # print(serializer.data.get('new_price'))
+            return int(serializer.data.get('new_price')) + int((tax / 100) * int(serializer.data.get('new_price')))
+            # if serializer.data['has_discount']:
+                # return int(serializer.data['new_price']) + int((tax / 100) * int(serializer.data['old_price']))
+            # else:
+                # return int(serializer.data['new_price']) + int((tax / 100) * int(serializer.data['old_price']))
+
     def get_housekeeper_detail(self, obj):
         return HousekeeperSerializer(obj.housekeeper).data
 
     def get_status_detail(self, obj):
-        return StatusSerializer(obj.status).data
+        if obj.status:
+            return StatusSerializer(obj.status).data
     
     
     def get_employment_type(self, obj):
@@ -409,22 +479,43 @@ class TransferRequestSerializer(serializers.ModelSerializer):
     # housekeeper = HousekeeperSerializer()
     # request_type = ServiceTypeSerializer()
     # status=StatusSerializer()
-    
+    requester = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
+    # requester_detail = CustomUserSerializer(source='requester', read_only=True)
     employment_type = serializers.SerializerMethodField()
     housekeeper_detail = serializers.SerializerMethodField()
     status_detail = serializers.SerializerMethodField()
+    total_price = serializers.SerializerMethodField()
+    # employment_type = serializers.SerializerMethodField()
+    # housekeeper_detail = serializers.SerializerMethodField()
+    # status_detail = serializers.SerializerMethodField()
     class Meta:
         model = TransferRequest
         fields = '__all__'
         read_only_fields = ('requester',)
         
-        
-    def create(self, validated_data):
-        request = self.context.get('request')
-        if request and hasattr(request, 'user'):
-            validated_data['requester'] = request.user
+    def get_total_price(self, obj):
+        tax = Taxes.objects.filter(name='default')
+        if not tax.exists():
+            tax = 0
         else:
-            raise serializers.ValidationError("Requester information is missing.")
+            tax = int(tax.first().amount)
+        custom_package = obj.custom_package_id
+        # nat = CustomPackageNationallity.objects.filter(nationallity=nationality)
+        if custom_package:
+            serializer = CustomPackageSerializer(custom_package)
+            # print(serializer.data.get('new_price'))
+            return int(serializer.data.get('new_price')) + int((tax / 100) * int(serializer.data.get('new_price')))
+            # if serializer.data['has_discount']:
+                # return int(serializer.data['new_price']) + int((tax / 100) * int(serializer.data['old_price']))
+            # else:
+                # return int(serializer.data['new_price']) + int((tax / 100) * int(serializer.data['old_price']))
+    def create(self, validated_data):
+        # request = self.context.get('request')
+        # if request and hasattr(request, 'user'):
+        #     validated_data['requester'] = request.user
+        # else:
+        #     raise serializers.ValidationError("Requester information is missing.")
+        # print(validated_data)
         return super().create(validated_data)
     
     
@@ -485,3 +576,19 @@ class CombinedRequestsSerializer(serializers.Serializer):
     # hire_requests = serializers.ListSerializer(child=HireRequestSerializer())
     # recruitment_requests = serializers.ListSerializer(child=RecruitmentRequestSerializer())
     # transfer_requests = serializers.ListSerializer(child=TransferRequestSerializer())
+
+class NotificationSerializer(serializers.ModelSerializer):
+    users_detail = CustomUserSerializer(many=True, read_only=True, source='users')
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
+# class CustomFCMDeviceSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = CustomFCMDevice
+#         fields = '__all__'
+
+class PushNotificationTokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PushNotificationToken
+        fields = '__all__'
